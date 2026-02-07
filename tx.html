@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BBS Coin Tx Launcher</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: #0b0f17; color: #e7edf7; }
+    header { padding: 18px 16px; border-bottom: 1px solid #1c2433; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+    header h1 { margin: 0; font-size: 16px; letter-spacing: 0.2px; opacity: 0.95; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 860px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .card { background: #0f1624; border: 1px solid #1c2433; border-radius: 14px; padding: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+    .card h2 { margin: 0 0 8px; font-size: 14px; opacity: 0.95; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .kv { display: grid; grid-template-columns: 140px 1fr; gap: 8px 10px; align-items: start; }
+    .k { opacity: 0.7; font-size: 12px; padding-top: 6px; }
+    .v { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; background: #0b0f17; border: 1px solid #1c2433; border-radius: 10px; padding: 8px; overflow: auto; }
+    label { display: block; font-size: 12px; opacity: 0.8; margin: 10px 0 6px; }
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: #0b0f17;
+      color: #e7edf7;
+      border: 1px solid #1c2433;
+      border-radius: 10px;
+      padding: 10px 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      outline: none;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    .btn {
+      appearance: none;
+      border: 1px solid #2b3952;
+      background: #16243a;
+      color: #e7edf7;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn.secondary { background: transparent; }
+    .btn.danger { border-color: #5a2430; background: #2a1218; }
+    .tag { display: inline-flex; gap: 6px; align-items: center; padding: 4px 8px; border: 1px solid #1c2433; border-radius: 999px; font-size: 12px; opacity: 0.9; }
+    .ok { color: #8ef0a7; }
+    .warn { color: #ffd27d; }
+    .err { color: #ff7d7d; }
+    .help { font-size: 12px; opacity: 0.7; line-height: 1.45; }
+    .sep { height: 1px; background: #1c2433; margin: 12px 0; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .small { font-size: 12px; opacity: 0.8; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>BBS Coin Tx Launcher</h1>
+  <div class="row">
+    <span id="tagWallet" class="tag">Wallet: <span class="mono" id="walletAddr">not connected</span></span>
+    <span id="tagChain" class="tag">Chain: <span class="mono" id="chainInfo">?</span></span>
+    <button class="btn" id="btnConnect">Connect MetaMask</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <div class="card">
+      <h2>Parsed Params (from URL)</h2>
+      <div class="kv">
+        <div class="k">Mode</div><div class="v" id="pMode"></div>
+        <div class="k">chain</div><div class="v" id="pChain"></div>
+        <div class="k">to</div><div class="v" id="pTo"></div>
+        <div class="k">root</div><div class="v" id="pRoot"></div>
+        <div class="k">uri</div><div class="v" id="pUri"></div>
+        <div class="k">epoch</div><div class="v" id="pEpoch"></div>
+        <div class="k">amount</div><div class="v" id="pAmount"></div>
+        <div class="k">proof</div><div class="v" id="pProof"></div>
+      </div>
+      <div class="sep"></div>
+      <div class="help">
+        This page is intentionally “dumb”: it encodes and submits txs using minimal ABI.
+        <br/>- If <span class="mono">root</span> + <span class="mono">uri</span> are present → Publish mode.
+        <br/>- If <span class="mono">epoch</span> + <span class="mono">amount</span> + <span class="mono">proof</span> are present → Claim mode.
+        <br/><br/>
+        Proof too long for URL? Use <span class="mono">proof_b64</span> (base64url(JSON array)).
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Actions</h2>
+
+      <div class="row" style="margin-bottom: 8px;">
+        <button class="btn" id="btnFillFromUrl">Fill forms from URL</button>
+        <button class="btn secondary" id="btnClear">Clear</button>
+        <button class="btn secondary" id="btnPreflight" disabled>Preflight (debug)</button>
+      </div>
+
+      <div class="sep"></div>
+
+      <h2>Publish Epoch (Sysop)</h2>
+      <label>Distributor (to)</label>
+      <input id="fPubTo" placeholder="0xDistributor..." />
+      <label>Merkle root (bytes32)</label>
+      <input id="fPubRoot" placeholder="0x..." />
+      <label>URI (string)</label>
+      <input id="fPubUri" placeholder="bbscoin://futureland.today/epochs/2026-02" />
+      <label>Expected chainId</label>
+      <input id="fChain" placeholder="137" />
+      <div class="row" style="margin-top: 10px;">
+        <button class="btn danger" id="btnPublish" disabled>Publish epoch</button>
+      </div>
+      <div class="help" style="margin-top: 8px;">
+        Requires the connected wallet to be the distributor <span class="mono">owner()</span> (or tx reverts).
+      </div>
+
+      <div class="sep"></div>
+
+      <h2>Claim (User)</h2>
+      <label>Distributor (to)</label>
+      <input id="fClaimTo" placeholder="0xDistributor..." />
+      <label>Epoch (uint256)</label>
+      <input id="fClaimEpoch" placeholder="0" />
+      <label>Amount (uint256, base units / wei)</label>
+      <input id="fClaimAmount" placeholder="50000000000000000000" />
+      <label>Proof (JSON array of 0x… bytes32)</label>
+      <textarea id="fClaimProof" placeholder='["0x...","0x..."]'></textarea>
+      <div class="row" style="margin-top: 10px;">
+        <button class="btn danger" id="btnClaim" disabled>Claim</button>
+      </div>
+      <div class="help" style="margin-top: 8px;">
+        Amount must be base units (e.g. 50 * 10^18). Proof must match leaf (account,amount).
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 14px;">
+    <h2>Status / Logs</h2>
+    <div id="status" class="v" style="min-height: 90px; white-space: pre-wrap;"></div>
+    <div class="row" style="margin-top: 10px;">
+      <button class="btn secondary" id="btnCopyStatus">Copy logs</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+(function () {
+  // --- Minimal write ABIs ---
+  const ABI_PUBLISH = [{
+    "inputs": [
+      { "internalType": "bytes32", "name": "root", "type": "bytes32" },
+      { "internalType": "string", "name": "uri", "type": "string" }
+    ],
+    "name": "publishEpoch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }];
+
+  const ABI_CLAIM = [{
+    "inputs": [
+      { "internalType": "uint256", "name": "epoch", "type": "uint256" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "internalType": "bytes32[]", "name": "proof", "type": "bytes32[]" }
+    ],
+    "name": "claim",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }];
+
+  // --- Preflight read ABI (best-effort; if a function doesn't exist, we handle it) ---
+  const ABI_PREFLIGHT = [
+    { "inputs": [], "name": "owner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
+    { "inputs": [], "name": "currentEpoch", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+    { "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "name": "epochRoot", "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }], "stateMutability": "view", "type": "function" },
+    { "inputs": [], "name": "paused", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }
+  ];
+
+  const el = (id) => document.getElementById(id);
+
+  const statusEl = el("status");
+  const walletAddrEl = el("walletAddr");
+  const chainInfoEl = el("chainInfo");
+  const tagWallet = el("tagWallet");
+  const tagChain = el("tagChain");
+
+  const btnConnect = el("btnConnect");
+  const btnPublish = el("btnPublish");
+  const btnClaim = el("btnClaim");
+  const btnPreflight = el("btnPreflight");
+
+  const btnFillFromUrl = el("btnFillFromUrl");
+  const btnClear = el("btnClear");
+  const btnCopyStatus = el("btnCopyStatus");
+
+  const pMode = el("pMode"), pChain = el("pChain"), pTo = el("pTo"), pRoot = el("pRoot"), pUri = el("pUri"),
+        pEpoch = el("pEpoch"), pAmount = el("pAmount"), pProof = el("pProof");
+
+  const fPubTo = el("fPubTo"), fPubRoot = el("fPubRoot"), fPubUri = el("fPubUri"), fChain = el("fChain");
+  const fClaimTo = el("fClaimTo"), fClaimEpoch = el("fClaimEpoch"), fClaimAmount = el("fClaimAmount"), fClaimProof = el("fClaimProof");
+
+  let provider = null;
+  let signer = null;
+  let connectedAddress = null;
+  let connectedChainId = null;
+
+  function log(line) {
+    const t = new Date().toISOString();
+    statusEl.textContent += `[${t}] ${line}\n`;
+    statusEl.scrollTop = statusEl.scrollHeight;
+  }
+
+  function setTag(elTag, kind) {
+    elTag.classList.remove("ok", "warn", "err");
+    if (kind === "ok") elTag.classList.add("ok");
+    if (kind === "warn") elTag.classList.add("warn");
+    if (kind === "err") elTag.classList.add("err");
+  }
+
+  function isHex32(x) { return /^0x[0-9a-fA-F]{64}$/.test((x || "").trim()); }
+  function isAddr(x) {
+    try { return ethers.isAddress((x || "").trim()); } catch { return false; }
+  }
+  function parseUint(x) {
+    const s = (x || "").trim();
+    if (!/^\d+$/.test(s)) return null;
+    try { return BigInt(s); } catch { return null; }
+  }
+  function parseProofJson(text) {
+    const s = (text || "").trim();
+    if (!s) return null;
+    try {
+      const arr = JSON.parse(s);
+      if (!Array.isArray(arr)) return null;
+      for (const it of arr) if (typeof it !== "string" || !isHex32(it)) return null;
+      return arr;
+    } catch { return null; }
+  }
+
+  function getQuery() {
+    const q = new URLSearchParams(window.location.search);
+    const chain = q.get("chain") || q.get("chainId") || "";
+    const to = q.get("to") || q.get("distributor") || "";
+    const root = q.get("root") || "";
+    const uri = q.get("uri") || "";
+    const epoch = q.get("epoch") || "";
+    const amount = q.get("amount") || "";
+    let proof = q.get("proof") || "";
+
+    const proofB64 = q.get("proof_b64") || "";
+    if (!proof && proofB64) {
+      try {
+        const b64 = proofB64.replace(/-/g, "+").replace(/_/g, "/");
+        const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+        const json = atob(b64 + pad);
+        proof = json;
+      } catch (e) {
+        log("Failed to decode proof_b64: " + (e?.message || e));
+      }
+    }
+
+    const mode =
+      (root && uri && to) ? "publish" :
+      (epoch && amount && proof && to) ? "claim" :
+      "unknown";
+
+    return { chain, to, root, uri, epoch, amount, proof, mode };
+  }
+
+  function renderParams() {
+    const q = getQuery();
+    pMode.textContent = q.mode;
+    pChain.textContent = q.chain || "(none)";
+    pTo.textContent = q.to || "(none)";
+    pRoot.textContent = q.root || "(none)";
+    pUri.textContent = q.uri || "(none)";
+    pEpoch.textContent = q.epoch || "(none)";
+    pAmount.textContent = q.amount || "(none)";
+    pProof.textContent = q.proof ? (q.proof.length > 240 ? q.proof.slice(0, 240) + "… ("+q.proof.length+" chars)" : q.proof) : "(none)";
+  }
+
+  function fillFormsFromUrl() {
+    const q = getQuery();
+    if (q.chain) fChain.value = q.chain;
+
+    if (q.to) { fPubTo.value = q.to; fClaimTo.value = q.to; }
+    if (q.root) fPubRoot.value = q.root;
+    if (q.uri) fPubUri.value = q.uri;
+
+    if (q.epoch) fClaimEpoch.value = q.epoch;
+    if (q.amount) fClaimAmount.value = q.amount;
+    if (q.proof) fClaimProof.value = q.proof;
+
+    log("Filled forms from URL params (mode=" + q.mode + ").");
+    updateButtons();
+  }
+
+  function clearForms() {
+    fPubTo.value = "";
+    fPubRoot.value = "";
+    fPubUri.value = "";
+    fChain.value = "";
+    fClaimTo.value = "";
+    fClaimEpoch.value = "";
+    fClaimAmount.value = "";
+    fClaimProof.value = "";
+    log("Cleared forms.");
+    updateButtons();
+  }
+
+  function decodeEthersError(e) {
+    // Try multiple common shapes (ethers v6 / RPC / MetaMask)
+    const parts = [];
+    if (!e) return "Unknown error";
+    if (typeof e === "string") return e;
+
+    if (e.shortMessage) parts.push(e.shortMessage);
+    if (e.reason) parts.push("reason=" + e.reason);
+    if (e.code) parts.push("code=" + e.code);
+
+    // nested error payloads
+    const msg = e.message || e?.error?.message || e?.info?.error?.message;
+    if (msg) parts.push(msg);
+
+    const dataMsg =
+      e?.data?.message ||
+      e?.error?.data?.message ||
+      e?.info?.error?.data?.message;
+
+    if (dataMsg) parts.push(dataMsg);
+
+    // sometimes revert data carries "execution reverted: XYZ"
+    const raw =
+      e?.info?.error?.message ||
+      e?.error?.message ||
+      e?.message;
+
+    if (raw && !parts.includes(raw)) parts.push(raw);
+
+    // de-dupe + join
+    return Array.from(new Set(parts)).filter(Boolean).join(" | ") || "Unknown error";
+  }
+
+  async function connect() {
+    if (!window.ethereum) {
+      log("No injected wallet found. Install MetaMask.");
+      alert("MetaMask not found. Install MetaMask, then refresh.");
+      return;
+    }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    connectedAddress = await signer.getAddress();
+
+    const net = await provider.getNetwork();
+    connectedChainId = Number(net.chainId);
+
+    walletAddrEl.textContent = connectedAddress;
+    chainInfoEl.textContent = String(connectedChainId);
+    setTag(tagWallet, "ok");
+    setTag(tagChain, "ok");
+
+    log("Connected: " + connectedAddress + " on chainId=" + connectedChainId);
+
+    window.ethereum.on?.("chainChanged", () => window.location.reload());
+    window.ethereum.on?.("accountsChanged", () => window.location.reload());
+
+    updateButtons();
+  }
+
+  async function ensureChain(expectedChainId) {
+    if (!provider) throw new Error("Not connected");
+    const net = await provider.getNetwork();
+    const cid = Number(net.chainId);
+    connectedChainId = cid;
+    chainInfoEl.textContent = String(cid);
+
+    if (expectedChainId && cid !== expectedChainId) {
+      // try MetaMask chain switch
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0x" + expectedChainId.toString(16) }]
+        });
+        // if switch succeeds, page will likely reload via chainChanged
+        log("Requested chain switch to " + expectedChainId);
+      } catch (switchErr) {
+        setTag(tagChain, "err");
+        throw new Error(`Wrong network. Expected chainId=${expectedChainId}, connected chainId=${cid}. (Switch failed or declined.)`);
+      }
+      // in case no reload
+      const net2 = await provider.getNetwork();
+      const cid2 = Number(net2.chainId);
+      chainInfoEl.textContent = String(cid2);
+      if (cid2 !== expectedChainId) {
+        setTag(tagChain, "err");
+        throw new Error(`Wrong network. Expected chainId=${expectedChainId}, connected chainId=${cid2}`);
+      }
+    }
+
+    setTag(tagChain, "ok");
+  }
+
+  function updateButtons() {
+    const expectedChain = fChain.value.trim() ? Number(fChain.value.trim()) : null;
+
+    const pubOk =
+      isAddr(fPubTo.value) &&
+      isHex32(fPubRoot.value) &&
+      (fPubUri.value.trim().length > 0) &&
+      signer !== null &&
+      (expectedChain === null || Number.isInteger(expectedChain));
+
+    const claimOk =
+      isAddr(fClaimTo.value) &&
+      parseUint(fClaimEpoch.value) !== null &&
+      parseUint(fClaimAmount.value) !== null &&
+      parseProofJson(fClaimProof.value) !== null &&
+      signer !== null &&
+      (expectedChain === null || Number.isInteger(expectedChain));
+
+    btnPublish.disabled = !pubOk;
+    btnClaim.disabled = !claimOk;
+    btnPreflight.disabled = !(signer && (isAddr(fPubTo.value) || isAddr(fClaimTo.value)));
+  }
+
+  async function preflight(distributorAddr) {
+    if (!signer) throw new Error("Connect wallet first.");
+    if (!isAddr(distributorAddr)) throw new Error("Bad distributor address");
+
+    const expectedChain = fChain.value.trim() ? Number(fChain.value.trim()) : null;
+    await ensureChain(expectedChain);
+
+    const c = new ethers.Contract(distributorAddr, ABI_PREFLIGHT, provider); // read-only w/ provider
+    log("Preflight target: " + distributorAddr);
+
+    // best-effort reads (some could throw if ABI not present; we handle individually)
+    async function tryRead(name, fn) {
+      try {
+        const v = await fn();
+        log(`${name}: ${String(v)}`);
+        return v;
+      } catch (e) {
+        log(`${name}: (unavailable) ${decodeEthersError(e)}`);
+        return null;
+      }
+    }
+
+    const owner = await tryRead("owner()", () => c.owner());
+    const paused = await tryRead("paused()", () => c.paused());
+    const curEpoch = await tryRead("currentEpoch()", () => c.currentEpoch());
+
+    if (curEpoch !== null) {
+      const epRoot = await tryRead(`epochRoot(${curEpoch})`, () => c.epochRoot(curEpoch));
+      if (typeof epRoot === "string" && epRoot !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+        log("WARNING: epochRoot(currentEpoch) is NONZERO. If your publish targets currentEpoch, it may already be 'used'.");
+      }
+    }
+
+    if (owner && connectedAddress) {
+      const ok = owner.toLowerCase() === connectedAddress.toLowerCase();
+      log(`owner match connected wallet? ${ok ? "YES" : "NO"}`);
+      if (!ok) log("Publish WILL revert unless you connect the distributor owner wallet (or Safe module relayer etc).");
+    }
+
+    if (paused === true) {
+      log("WARNING: contract is paused. Claims will revert while paused.");
+    }
+
+    log("Preflight done.");
+  }
+
+  function getDistributorForPreflight() {
+    // prefer publish-to if filled, else claim-to, else URL param
+    if (isAddr(fPubTo.value)) return fPubTo.value.trim();
+    if (isAddr(fClaimTo.value)) return fClaimTo.value.trim();
+    const q = getQuery();
+    if (isAddr(q.to)) return q.to.trim();
+    return "";
+  }
+
+  async function doPublish() {
+    try {
+      if (!signer) throw new Error("Connect wallet first.");
+
+      const expectedChain = fChain.value.trim() ? Number(fChain.value.trim()) : null;
+      await ensureChain(expectedChain);
+
+      const to = fPubTo.value.trim();
+      const root = fPubRoot.value.trim();
+      const uri = fPubUri.value.trim();
+
+      if (!isAddr(to)) throw new Error("Bad distributor address");
+      if (!isHex32(root)) throw new Error("Bad root (expected bytes32)");
+      if (!uri) throw new Error("Missing uri");
+
+      // Preflight read + estimateGas
+      await preflight(to);
+
+      const write = new ethers.Contract(to, ABI_PUBLISH, signer);
+
+      log("Estimating gas for publishEpoch...");
+      const gas = await write.publishEpoch.estimateGas(root, uri);
+      log("estimateGas OK: " + gas.toString());
+
+      log("Sending publishEpoch tx...");
+      const tx = await write.publishEpoch(root, uri);
+      log("tx sent: " + tx.hash);
+
+      const receipt = await tx.wait();
+      log("tx confirmed: " + receipt.transactionHash + " status=" + receipt.status);
+      alert("Publish confirmed:\n" + receipt.transactionHash);
+    } catch (e) {
+      const msg = decodeEthersError(e);
+      log("ERROR publish: " + msg);
+      alert("Publish failed:\n" + msg);
+    }
+  }
+
+  async function doClaim() {
+    try {
+      if (!signer) throw new Error("Connect wallet first.");
+
+      const expectedChain = fChain.value.trim() ? Number(fChain.value.trim()) : null;
+      await ensureChain(expectedChain);
+
+      const to = fClaimTo.value.trim();
+      const epoch = parseUint(fClaimEpoch.value);
+      const amount = parseUint(fClaimAmount.value);
+      const proof = parseProofJson(fClaimProof.value);
+
+      if (!isAddr(to)) throw new Error("Bad distributor address");
+      if (epoch === null) throw new Error("Bad epoch (uint)");
+      if (amount === null) throw new Error("Bad amount (uint, base units)");
+      if (!proof) throw new Error("Bad proof JSON");
+
+      await preflight(to);
+
+      const write = new ethers.Contract(to, ABI_CLAIM, signer);
+
+      log("Estimating gas for claim...");
+      const gas = await write.claim.estimateGas(epoch, amount, proof);
+      log("estimateGas OK: " + gas.toString());
+
+      log("Sending claim tx...");
+      const tx = await write.claim(epoch, amount, proof);
+      log("tx sent: " + tx.hash);
+
+      const receipt = await tx.wait();
+      log("tx confirmed: " + receipt.transactionHash + " status=" + receipt.status);
+      alert("Claim confirmed:\n" + receipt.transactionHash);
+    } catch (e) {
+      const msg = decodeEthersError(e);
+      log("ERROR claim: " + msg);
+      alert("Claim failed:\n" + msg);
+    }
+  }
+
+  // Wire UI
+  btnConnect.addEventListener("click", () => connect());
+  btnPublish.addEventListener("click", () => doPublish());
+  btnClaim.addEventListener("click", () => doClaim());
+
+  btnPreflight.addEventListener("click", async () => {
+    try {
+      const to = getDistributorForPreflight();
+      if (!to) throw new Error("No distributor address filled.");
+      await preflight(to);
+    } catch (e) {
+      const msg = decodeEthersError(e);
+      log("ERROR preflight: " + msg);
+      alert("Preflight failed:\n" + msg);
+    }
+  });
+
+  btnFillFromUrl.addEventListener("click", () => fillFormsFromUrl());
+  btnClear.addEventListener("click", () => clearForms());
+  btnCopyStatus.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(statusEl.textContent || "");
+    log("Copied logs to clipboard.");
+  });
+
+  // Update buttons on input changes
+  [fPubTo, fPubRoot, fPubUri, fChain, fClaimTo, fClaimEpoch, fClaimAmount, fClaimProof]
+    .forEach(x => x.addEventListener("input", updateButtons));
+
+  // Init
+  renderParams();
+  fillFormsFromUrl();
+  log("Ready. Connect MetaMask to enable buttons.");
+  setTag(tagWallet, "warn");
+  setTag(tagChain, "warn");
+})();
+</script>
+</body>
+</html>

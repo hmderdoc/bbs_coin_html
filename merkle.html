@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBS Coin - Epoch Publisher</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #0c0c0c;
+            --card: #111318;
+            --border: #0cc;
+            --border-dim: #066;
+            --cyan: #0ff;
+            --cyan-dim: #099;
+            --gold: #ffd700;
+            --green: #0f0;
+            --green-dim: #090;
+            --red: #f44;
+            --red-dim: #a22;
+            --white: #eee;
+            --gray: #888;
+            --text: #ccc;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'IBM Plex Mono', 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            padding: 24px 0;
+            border: 1px solid var(--border);
+            background: var(--card);
+            margin-bottom: 2px;
+        }
+        header h1 {
+            color: var(--gold);
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        header .subtitle {
+            color: var(--cyan-dim);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        section {
+            border: 1px solid var(--border-dim);
+            background: var(--card);
+            padding: 20px;
+            margin-bottom: 2px;
+        }
+        section h2 {
+            color: var(--cyan);
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-dim);
+        }
+        label {
+            color: var(--gray);
+            font-size: 12px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        input[type="text"], input[type="number"], textarea {
+            background: #0a0a0a;
+            border: 1px solid var(--border-dim);
+            color: var(--white);
+            font-family: inherit;
+            font-size: 13px;
+            padding: 8px 10px;
+            width: 100%;
+            outline: none;
+        }
+        input:focus, textarea:focus {
+            border-color: var(--cyan);
+        }
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 12px;
+        }
+        .row .field { flex: 1; }
+        .row .field-sm { flex: 0 0 120px; }
+        button {
+            background: transparent;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            font-family: inherit;
+            font-size: 13px;
+            padding: 8px 20px;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: all 0.15s;
+        }
+        button:hover:not(:disabled) {
+            background: var(--cyan);
+            color: var(--bg);
+        }
+        button:disabled {
+            border-color: var(--border-dim);
+            color: var(--gray);
+            cursor: not-allowed;
+        }
+        button.primary {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+        button.primary:hover:not(:disabled) {
+            background: var(--gold);
+            color: var(--bg);
+        }
+        button.download {
+            border-color: var(--green-dim);
+            color: var(--green);
+            font-size: 12px;
+            padding: 6px 14px;
+        }
+        button.download:hover:not(:disabled) {
+            background: var(--green);
+            color: var(--bg);
+        }
+        .status-line {
+            font-size: 12px;
+            margin: 4px 0;
+        }
+        .status-line .label {
+            color: var(--gray);
+            display: inline;
+        }
+        .status-line .value {
+            color: var(--white);
+        }
+        .ok { color: var(--green); }
+        .warn { color: var(--gold); }
+        .err { color: var(--red); }
+        .dim { color: var(--gray); }
+        .mono { font-family: inherit; word-break: break-all; }
+        .msg-box {
+            padding: 10px 14px;
+            margin: 10px 0;
+            font-size: 12px;
+            border-left: 3px solid;
+        }
+        .msg-box.error {
+            border-color: var(--red);
+            background: rgba(255,68,68,0.08);
+            color: var(--red);
+        }
+        .msg-box.success {
+            border-color: var(--green);
+            background: rgba(0,255,0,0.06);
+            color: var(--green);
+        }
+        .msg-box.info {
+            border-color: var(--cyan);
+            background: rgba(0,204,204,0.06);
+            color: var(--cyan-dim);
+        }
+        .msg-box.warning {
+            border-color: var(--gold);
+            background: rgba(255,215,0,0.06);
+            color: var(--gold);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        th {
+            color: var(--gold);
+            text-align: left;
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border-dim);
+            font-weight: normal;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 4px 8px;
+            border-bottom: 1px solid #1a1a1a;
+            color: var(--text);
+        }
+        td.addr { font-size: 11px; color: var(--cyan-dim); }
+        td.num { text-align: right; color: var(--green); }
+        .summary {
+            display: flex;
+            gap: 24px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        .summary .item .label { display: inline; color: var(--gray); }
+        .summary .item .value { color: var(--gold); font-weight: bold; }
+        .root-display {
+            background: #0a0a0a;
+            border: 1px solid var(--border-dim);
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 11px;
+            word-break: break-all;
+            color: var(--cyan);
+        }
+        .root-display .label {
+            color: var(--gray);
+            margin-bottom: 4px;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+        .hidden { display: none !important; }
+        .tx-link {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+        .tx-link:hover { text-decoration: underline; }
+        .safety-checks .check {
+            font-size: 12px;
+            margin: 4px 0;
+        }
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--border-dim);
+            border-top-color: var(--cyan);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .example-link {
+            color: var(--cyan-dim);
+            font-size: 11px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .example-link:hover { color: var(--cyan); }
+        footer {
+            text-align: center;
+            padding: 16px;
+            font-size: 11px;
+            color: var(--gray);
+            border: 1px solid var(--border-dim);
+            background: var(--card);
+        }
+        footer a { color: var(--cyan-dim); text-decoration: none; }
+        footer a:hover { color: var(--cyan); }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <h1>BBS COIN EPOCH PUBLISHER</h1>
+        <div class="subtitle">Build and publish Merkle distribution epochs on-chain</div>
+    </header>
+
+    <!-- ============================================================ -->
+    <!-- SETUP -->
+    <!-- ============================================================ -->
+    <section id="sec-setup">
+        <h2>SETUP</h2>
+        <div class="row">
+            <div class="field">
+                <label>Distributor Contract Address</label>
+                <input type="text" id="contractAddr" placeholder="0x..." />
+            </div>
+            <div class="field-sm">
+                <label>Token Decimals</label>
+                <input type="number" id="tokenDecimals" value="18" min="0" max="18" />
+            </div>
+        </div>
+        <div class="btn-row">
+            <button id="btnConnect" onclick="connectWallet()">Connect Wallet</button>
+        </div>
+        <div id="setupStatus"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- DISTRIBUTION DATA -->
+    <!-- ============================================================ -->
+    <section id="sec-input">
+        <h2>DISTRIBUTION DATA</h2>
+        <label>
+            Paste JSON array &mdash; <span class="example-link" onclick="loadExample()">load example</span>
+        </label>
+        <textarea id="inputData" placeholder='[{"address": "0x...", "tokens": 10}, {"address": "0x...", "tokens": 20}]'></textarea>
+        <div class="btn-row">
+            <button id="btnBuild" onclick="parseAndBuild()" disabled>Parse &amp; Build Merkle Tree</button>
+        </div>
+        <div id="buildStatus"></div>
+        <div id="buildResults" class="hidden">
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Address</th><th>Tokens</th><th>Amount (Wei)</th></tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+            <div class="summary">
+                <div class="item"><span class="label">Total: </span><span class="value" id="totalTokens"></span></div>
+                <div class="item"><span class="label">Recipients: </span><span class="value" id="recipientCount"></span></div>
+            </div>
+            <div class="root-display">
+                <div class="label">Merkle Root</div>
+                <div id="merkleRootDisplay"></div>
+            </div>
+            <div class="root-display">
+                <div class="label">Epoch URI</div>
+                <div id="epochUriDisplay"></div>
+            </div>
+            <div id="safetyChecks" class="safety-checks"></div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- PUBLISH -->
+    <!-- ============================================================ -->
+    <section id="sec-publish">
+        <h2>PUBLISH EPOCH</h2>
+        <div class="btn-row">
+            <button id="btnPublish" class="primary" onclick="publishEpoch()" disabled>Publish Epoch to Blockchain</button>
+        </div>
+        <div id="publishStatus"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- DOWNLOAD -->
+    <!-- ============================================================ -->
+    <section id="sec-download">
+        <h2>DOWNLOAD ARTIFACTS</h2>
+        <p class="dim" style="font-size:12px;margin-bottom:10px">
+            Save these files for proof verification and user claim generation.
+        </p>
+        <div class="btn-row">
+            <button class="download" id="btnDlProofs" onclick="downloadProofs()" disabled>proofs.json</button>
+            <button class="download" id="btnDlEpoch" onclick="downloadEpochJson()" disabled>epoch.json</button>
+            <button class="download" id="btnDlRoot" onclick="downloadRoot()" disabled>root.json</button>
+        </div>
+    </section>
+
+    <footer>
+        BBS Coin &mdash; A multi-sig community project.
+        Tokens carry no implied value.
+        &bull; <a href="https://polygonscan.com" target="_blank">PolygonScan</a>
+    </footer>
+
+</div>
+
+<script>
+// ========================================================================
+// ABI
+// ========================================================================
+const DISTRIBUTOR_ABI = [
+    "function currentEpoch() view returns (uint256)",
+    "function publishEpoch(bytes32 root, string uri)",
+    "function owner() view returns (address)",
+    "function epochRoot(uint256 epoch) view returns (bytes32)",
+    "function epochURI(uint256 epoch) view returns (string)",
+    "function isClaimed(uint256 epoch, address account) view returns (bool)",
+    "function paused() view returns (bool)",
+    "event EpochPublished(uint256 indexed epoch, bytes32 root, string uri)"
+];
+
+const DEFAULT_CONTRACT = "0x0AA6b0A320831Df4A14bd846Fc999B97dDdEe782";
+const POLYGON_CHAIN_ID = 137;
+const POLYGON_RPC = "https://polygon-rpc.com";
+
+// ========================================================================
+// STATE
+// ========================================================================
+let state = {
+    provider: null,
+    signer: null,
+    contract: null,
+    connectedAddress: null,
+    chainId: null,
+    currentEpoch: null,
+    ownerAddress: null,
+    isPaused: false,
+    entries: null,       // [{address, tokens, tokensWei}]
+    leafHashes: null,    // [bytes32]
+    layers: null,        // Merkle tree layers
+    merkleRoot: null,
+    epochUri: null,
+    txHash: null,
+    publishedEpochId: null
+};
+
+// ========================================================================
+// INIT
+// ========================================================================
+(function init() {
+    // Restore saved contract address and decimals
+    const saved = localStorage.getItem("bbscoin_contract");
+    const savedDec = localStorage.getItem("bbscoin_decimals");
+    document.getElementById("contractAddr").value = saved || DEFAULT_CONTRACT;
+    if (savedDec) document.getElementById("tokenDecimals").value = savedDec;
+
+    // Save on change
+    document.getElementById("contractAddr").addEventListener("change", function() {
+        localStorage.setItem("bbscoin_contract", this.value.trim());
+    });
+    document.getElementById("tokenDecimals").addEventListener("change", function() {
+        localStorage.setItem("bbscoin_decimals", this.value);
+    });
+})();
+
+// ========================================================================
+// MERKLE TREE — matches contract leaf encoding exactly
+// ========================================================================
+
+/**
+ * Hash a leaf: keccak256(abi.encodePacked(address, uint256))
+ * This matches the contract's claim verification.
+ */
+function hashLeaf(address, amountWei) {
+    return ethers.keccak256(
+        ethers.solidityPacked(["address", "uint256"], [address, amountWei])
+    );
+}
+
+/**
+ * Hash a pair of nodes: sorted, then keccak256(abi.encodePacked(a, b))
+ * Matches OpenZeppelin MerkleProof._hashPair
+ */
+function hashPair(a, b) {
+    const aNorm = a.toLowerCase();
+    const bNorm = b.toLowerCase();
+    const [left, right] = aNorm < bNorm ? [a, b] : [b, a];
+    return ethers.keccak256(
+        ethers.solidityPacked(["bytes32", "bytes32"], [left, right])
+    );
+}
+
+/**
+ * Build Merkle tree bottom-up.
+ * - Sorted pair hashing (OZ-compatible)
+ * - Odd leaf duplicated (paired with itself)
+ * Returns { root, layers }
+ */
+function buildMerkleTree(leaves) {
+    if (leaves.length === 0) throw new Error("Cannot build tree with zero leaves");
+    if (leaves.length === 1) return { root: leaves[0], layers: [leaves] };
+
+    const layers = [leaves.slice()];
+    while (layers[layers.length - 1].length > 1) {
+        const prev = layers[layers.length - 1];
+        const next = [];
+        for (let i = 0; i < prev.length; i += 2) {
+            const left = prev[i];
+            const right = (i + 1 < prev.length) ? prev[i + 1] : prev[i]; // duplicate if odd
+            next.push(hashPair(left, right));
+        }
+        layers.push(next);
+    }
+    return { root: layers[layers.length - 1][0], layers };
+}
+
+/**
+ * Get Merkle proof for a leaf at given index.
+ */
+function getProof(layers, leafIndex) {
+    const proof = [];
+    let idx = leafIndex;
+    for (let i = 0; i < layers.length - 1; i++) {
+        const layer = layers[i];
+        let siblingIdx = (idx % 2 === 0) ? idx + 1 : idx - 1;
+        if (siblingIdx >= layer.length) {
+            // Odd one out — paired with itself
+            proof.push(layer[idx]);
+        } else {
+            proof.push(layer[siblingIdx]);
+        }
+        idx = Math.floor(idx / 2);
+    }
+    return proof;
+}
+
+/**
+ * Verify a proof against the root (client-side sanity check)
+ */
+function verifyProof(proof, root, leaf) {
+    let hash = leaf;
+    for (const p of proof) {
+        hash = hashPair(hash, p);
+    }
+    return hash.toLowerCase() === root.toLowerCase();
+}
+
+// ========================================================================
+// WALLET & CONTRACT
+// ========================================================================
+
+async function connectWallet() {
+    const statusEl = document.getElementById("setupStatus");
+    statusEl.innerHTML = '<div class="msg-box info"><span class="spinner"></span>Connecting wallet...</div>';
+
+    try {
+        if (!window.ethereum) {
+            throw new Error("No wallet detected. Install MetaMask or a compatible browser wallet.");
+        }
+
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        const network = await provider.getNetwork();
+
+        state.provider = provider;
+        state.signer = signer;
+        state.connectedAddress = address;
+        state.chainId = Number(network.chainId);
+
+        // Connect to contract
+        const contractAddr = document.getElementById("contractAddr").value.trim();
+        if (!ethers.isAddress(contractAddr)) {
+            throw new Error("Invalid contract address");
+        }
+
+        const contract = new ethers.Contract(contractAddr, DISTRIBUTOR_ABI, signer);
+        state.contract = contract;
+
+        // Read contract state
+        const [currentEpoch, owner, paused] = await Promise.all([
+            contract.currentEpoch(),
+            contract.owner(),
+            contract.paused().catch(() => false)
+        ]);
+
+        state.currentEpoch = Number(currentEpoch);
+        state.ownerAddress = owner;
+        state.isPaused = paused;
+
+        // Update UI
+        const isOwner = address.toLowerCase() === owner.toLowerCase();
+        const chainName = state.chainId === POLYGON_CHAIN_ID ? "Polygon" : "Chain " + state.chainId;
+
+        let html = '';
+        html += statusLine("Connected", shortAddr(address), "ok");
+        html += statusLine("Network", chainName + " (" + state.chainId + ")",
+            state.chainId === POLYGON_CHAIN_ID ? "ok" : "warn");
+        html += statusLine("Next Epoch", "#" + state.currentEpoch, "ok");
+        html += statusLine("Contract Owner", shortAddr(owner), "");
+        html += statusLine("Your Role", isOwner ? "Owner ✓" : "Not owner — cannot publish", isOwner ? "ok" : "err");
+
+        if (state.isPaused) {
+            html += '<div class="msg-box warning">Contract is paused. Publishing may be blocked.</div>';
+        }
+
+        statusEl.innerHTML = html;
+
+        // Enable build button
+        document.getElementById("btnBuild").disabled = false;
+        document.getElementById("btnConnect").textContent = "Reconnect";
+
+    } catch (err) {
+        statusEl.innerHTML = '<div class="msg-box error">' + escHtml(err.message) + '</div>';
+    }
+}
+
+// ========================================================================
+// PARSE & BUILD
+// ========================================================================
+
+async function parseAndBuild() {
+    const statusEl = document.getElementById("buildStatus");
+    const resultsEl = document.getElementById("buildResults");
+    resultsEl.classList.add("hidden");
+
+    try {
+        // Parse input
+        const raw = document.getElementById("inputData").value.trim();
+        if (!raw) throw new Error("No input data");
+
+        let entries;
+        try {
+            entries = JSON.parse(raw);
+        } catch (_) {
+            try {
+                entries = (new Function("return " + raw))();
+            } catch (_2) {
+                throw new Error("Invalid JSON. Expected format: [{address: \"0x...\", tokens: 10}, ...]");
+            }
+        }
+
+        if (!Array.isArray(entries) || entries.length === 0) {
+            throw new Error("Input must be a non-empty array");
+        }
+
+        const decimals = parseInt(document.getElementById("tokenDecimals").value) || 18;
+
+        // Validate and normalize entries
+        const normalized = [];
+        const seenAddresses = new Set();
+
+        for (let i = 0; i < entries.length; i++) {
+            const e = entries[i];
+            const addr = e.address || e.addr || e.wallet;
+            const tokens = e.tokens ?? e.amount ?? e.value;
+
+            if (!addr || !ethers.isAddress(addr)) {
+                throw new Error("Entry " + (i + 1) + ": invalid address \"" + addr + "\"");
+            }
+            if (tokens === undefined || tokens === null || Number(tokens) <= 0) {
+                throw new Error("Entry " + (i + 1) + ": invalid token amount " + tokens);
+            }
+
+            const checksumAddr = ethers.getAddress(addr);
+            const addrLower = checksumAddr.toLowerCase();
+
+            if (seenAddresses.has(addrLower)) {
+                throw new Error("Duplicate address: " + checksumAddr);
+            }
+            seenAddresses.add(addrLower);
+
+            const tokensWei = ethers.parseUnits(String(tokens), decimals);
+
+            normalized.push({
+                address: checksumAddr,
+                tokens: String(tokens),
+                tokensWei: tokensWei
+            });
+        }
+
+        // Safety check: owner not in distribution
+        const safetyEl = document.getElementById("safetyChecks");
+        let safetyHtml = "";
+
+        if (state.ownerAddress) {
+            const ownerLower = state.ownerAddress.toLowerCase();
+            const ownerInList = normalized.some(e => e.address.toLowerCase() === ownerLower);
+            if (ownerInList) {
+                safetyHtml += '<div class="check err">✗ CRITICAL: Contract owner address is in distribution list!</div>';
+                throw new Error("Safety check failed: contract owner address found in distribution. This would lock tokens.");
+            } else {
+                safetyHtml += '<div class="check ok">✓ Owner address not in distribution</div>';
+            }
+        }
+
+        // Address validation
+        for (const e of normalized) {
+            if (e.address === ethers.ZeroAddress) {
+                throw new Error("Zero address (0x000...000) found in distribution");
+            }
+        }
+        safetyHtml += '<div class="check ok">✓ No zero addresses</div>';
+
+        // Build Merkle tree
+        const leafHashes = normalized.map(e => hashLeaf(e.address, e.tokensWei));
+        const { root, layers } = buildMerkleTree(leafHashes);
+
+        // Verify all proofs locally
+        let allValid = true;
+        for (let i = 0; i < leafHashes.length; i++) {
+            const proof = getProof(layers, i);
+            if (!verifyProof(proof, root, leafHashes[i])) {
+                allValid = false;
+                break;
+            }
+        }
+
+        if (!allValid) {
+            throw new Error("Internal error: proof verification failed. Please report this bug.");
+        }
+        safetyHtml += '<div class="check ok">✓ All proofs verified locally (' + normalized.length + '/' + normalized.length + ')</div>';
+
+        // Epoch URI
+        const epochUri = "epoch-" + state.currentEpoch;
+
+        // Store state
+        state.entries = normalized;
+        state.leafHashes = leafHashes;
+        state.layers = layers;
+        state.merkleRoot = root;
+        state.epochUri = epochUri;
+
+        // Render results
+        const tbody = document.getElementById("resultsBody");
+        tbody.innerHTML = normalized.map(function(e, i) {
+            return '<tr>' +
+                '<td>' + (i + 1) + '</td>' +
+                '<td class="addr">' + e.address + '</td>' +
+                '<td class="num">' + e.tokens + '</td>' +
+                '<td class="addr">' + e.tokensWei.toString() + '</td>' +
+                '</tr>';
+        }).join("");
+
+        const totalTokens = normalized.reduce(function(sum, e) {
+            return sum + parseFloat(e.tokens);
+        }, 0);
+
+        document.getElementById("totalTokens").textContent = totalTokens + " tokens";
+        document.getElementById("recipientCount").textContent = normalized.length;
+        document.getElementById("merkleRootDisplay").textContent = root;
+        document.getElementById("epochUriDisplay").textContent = epochUri;
+        safetyEl.innerHTML = safetyHtml;
+
+        resultsEl.classList.remove("hidden");
+        statusEl.innerHTML = '<div class="msg-box success">Merkle tree built successfully</div>';
+
+        // Enable publish & download
+        document.getElementById("btnPublish").disabled = false;
+        document.getElementById("btnDlProofs").disabled = false;
+        document.getElementById("btnDlEpoch").disabled = false;
+        document.getElementById("btnDlRoot").disabled = false;
+
+    } catch (err) {
+        statusEl.innerHTML = '<div class="msg-box error">' + escHtml(err.message) + '</div>';
+    }
+}
+
+// ========================================================================
+// PUBLISH
+// ========================================================================
+
+async function publishEpoch() {
+    const statusEl = document.getElementById("publishStatus");
+
+    try {
+        if (!state.contract || !state.merkleRoot) {
+            throw new Error("Build the Merkle tree first");
+        }
+
+        if (!state.signer) {
+            throw new Error("Wallet not connected");
+        }
+
+        // Confirm
+        const proceed = confirm(
+            "Publish epoch #" + state.currentEpoch + "?\n\n" +
+            "Root: " + state.merkleRoot.substring(0, 18) + "...\n" +
+            "URI: " + state.epochUri + "\n" +
+            "Recipients: " + state.entries.length + "\n\n" +
+            "This is an on-chain transaction and cannot be undone."
+        );
+        if (!proceed) return;
+
+        statusEl.innerHTML = '<div class="msg-box info"><span class="spinner"></span>Sending transaction... Sign in your wallet.</div>';
+
+        // Double check currentEpoch hasn't changed
+        const liveEpoch = Number(await state.contract.currentEpoch());
+        if (liveEpoch !== state.currentEpoch) {
+            throw new Error(
+                "Epoch mismatch! Expected #" + state.currentEpoch +
+                " but contract says #" + liveEpoch +
+                ". Refresh and rebuild."
+            );
+        }
+
+        // Send transaction
+        const tx = await state.contract.publishEpoch(state.merkleRoot, state.epochUri);
+
+        statusEl.innerHTML =
+            '<div class="msg-box info"><span class="spinner"></span>Transaction sent. Waiting for confirmation...<br>' +
+            '<span class="dim">TX: ' + tx.hash + '</span></div>';
+
+        state.txHash = tx.hash;
+
+        // Wait for confirmation
+        const receipt = await tx.wait();
+
+        // Parse EpochPublished event
+        let publishedId = state.currentEpoch;
+        const iface = new ethers.Interface(DISTRIBUTOR_ABI);
+        for (const log of receipt.logs) {
+            try {
+                const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+                if (parsed && parsed.name === "EpochPublished") {
+                    publishedId = Number(parsed.args[0]);
+                    break;
+                }
+            } catch (_) {}
+        }
+
+        state.publishedEpochId = publishedId;
+
+        // Determine explorer URL
+        let explorerUrl = "https://polygonscan.com/tx/" + tx.hash;
+        if (state.chainId !== POLYGON_CHAIN_ID) {
+            explorerUrl = "#"; // Unknown chain, no explorer
+        }
+
+        statusEl.innerHTML =
+            '<div class="msg-box success">' +
+            '✓ Epoch #' + publishedId + ' published successfully!<br>' +
+            '<a class="tx-link" href="' + explorerUrl + '" target="_blank">' +
+            tx.hash.substring(0, 22) + '...' +
+            '</a> &bull; View on explorer' +
+            '</div>';
+
+        // Disable publish button (prevent double publish)
+        document.getElementById("btnPublish").disabled = true;
+        document.getElementById("btnPublish").textContent = "Published ✓";
+
+        // Refresh current epoch
+        state.currentEpoch = Number(await state.contract.currentEpoch());
+
+    } catch (err) {
+        let msg = err.message;
+        // Surface revert reason if available
+        if (err.reason) msg = err.reason;
+        if (err.data && err.data.message) msg = err.data.message;
+        statusEl.innerHTML = '<div class="msg-box error">' + escHtml(msg) + '</div>';
+    }
+}
+
+// ========================================================================
+// ARTIFACT BUILDERS
+// ========================================================================
+
+function buildProofsArtifact() {
+    if (!state.entries || !state.layers) return null;
+    const proofs = {};
+    for (let i = 0; i < state.entries.length; i++) {
+        const e = state.entries[i];
+        const proof = getProof(state.layers, i);
+        proofs[e.address] = {
+            amount: e.tokensWei.toString(),
+            proof: proof
+        };
+    }
+    return proofs;
+}
+
+function buildEpochArtifact() {
+    if (!state.entries) return null;
+    const decimals = parseInt(document.getElementById("tokenDecimals").value) || 18;
+    const contractAddr = document.getElementById("contractAddr").value.trim();
+
+    const totalWei = state.entries.reduce(function(sum, e) {
+        return sum + e.tokensWei;
+    }, 0n);
+
+    return {
+        epochId: state.publishedEpochId || state.currentEpoch,
+        merkleRoot: state.merkleRoot,
+        epochUri: state.epochUri,
+        tokenDecimals: decimals,
+        totalTokens: ethers.formatUnits(totalWei, decimals),
+        totalTokensWei: totalWei.toString(),
+        recipientCount: state.entries.length,
+        distributorContract: contractAddr,
+        chainId: state.chainId || POLYGON_CHAIN_ID,
+        txHash: state.txHash || null,
+        builtAt: new Date().toISOString(),
+        leaves: state.entries.map(function(e, i) {
+            return {
+                address: e.address,
+                tokens: e.tokens,
+                tokensWei: e.tokensWei.toString(),
+                leafHash: state.leafHashes[i]
+            };
+        })
+    };
+}
+
+function buildRootArtifact() {
+    return {
+        root: state.merkleRoot,
+        epochUri: state.epochUri,
+        epochId: state.publishedEpochId || state.currentEpoch,
+        distributorContract: document.getElementById("contractAddr").value.trim()
+    };
+}
+
+// ========================================================================
+// DOWNLOADS
+// ========================================================================
+
+function downloadFile(filename, data) {
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function downloadProofs() {
+    const proofs = buildProofsArtifact();
+    if (proofs) {
+        const epochId = state.publishedEpochId || state.currentEpoch;
+        downloadFile("epoch" + epochId + "-proofs.json", proofs);
+    }
+}
+
+function downloadEpochJson() {
+    const epoch = buildEpochArtifact();
+    if (epoch) {
+        downloadFile("epoch" + epoch.epochId + ".json", epoch);
+    }
+}
+
+function downloadRoot() {
+    const root = buildRootArtifact();
+    if (root) {
+        downloadFile("epoch" + root.epochId + "-root.json", root);
+    }
+}
+
+// ========================================================================
+// UI HELPERS
+// ========================================================================
+
+function shortAddr(addr) {
+    if (!addr || addr.length < 12) return addr || "";
+    return addr.substring(0, 6) + "..." + addr.substring(addr.length - 4);
+}
+
+function escHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function statusLine(label, value, cls) {
+    return '<div class="status-line">' +
+        '<span class="label">' + label + ': </span>' +
+        '<span class="value ' + (cls || "") + '">' + escHtml(value) + '</span>' +
+        '</div>';
+}
+
+function loadExample() {
+    document.getElementById("inputData").value =
+        '[\n' +
+        '  {"address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "tokens": 25},\n' +
+        '  {"address": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", "tokens": 50},\n' +
+        '  {"address": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65", "tokens": 10}\n' +
+        ']';
+}
+
+// Listen for account/chain changes
+if (window.ethereum) {
+    window.ethereum.on("accountsChanged", function() {
+        location.reload();
+    });
+    window.ethereum.on("chainChanged", function() {
+        location.reload();
+    });
+}
+</script>
+</body>
+</html>
