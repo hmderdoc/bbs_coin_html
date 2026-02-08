@@ -3,115 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BBS Coin - sysop-after-approval</title>
+    <title>BBS Coin - Sysop Onboarding</title>
     <link rel="stylesheet" href="global.css">
 </head>
 <body>
     <div class="container">
-        <p># BBS Coin — Sysop Guide (After Approval)</p>
-<p>Welcome aboard. If you’re reading this, your BBS has been approved to participate in **BBS Coin** and you now have a distributor contract on-chain.</p>
-<p>This document is written for **sysops**, not blockchain engineers. You do not need to understand Solidity to operate successfully — but you *do* need to understand what responsibilities you now have.</p>
-<p>---</p>
-<p>## What You Have Now</p>
-<p>After approval, the Foundation has created the following **on your behalf**:</p>
+        <h1>BBS Coin — Sysop Guide (After Approval)</h1>
+<p>Welcome aboard. If you’re reading this, your BBS has been approved to participate in <strong>BBS Coin</strong> and you now have a distributor contract on-chain.</p>
+<p>This document is written for <strong>sysops</strong>, not blockchain engineers. You do not need to understand Solidity to operate successfully — but you <em>do</em> need to understand what responsibilities you now have.</p>
+<hr />
+<h2>What You Have Now</h2>
+<p>After approval, the Foundation has created the following <strong>on your behalf</strong>:</p>
 <ul>
-<li>A **BbsMerkleDistributor** contract</li>
-<li>Registered in the **Distributor Registry**</li>
+<li>A <strong>BbsMerkleDistributor</strong> contract</li>
+<li>Registered in the <strong>Distributor Registry</strong></li>
 <li>Funded (or ready to be funded) with BBS Tokens</li>
-<li>Owned by **your wallet address** (EOA or Safe)</li>
+<li>Owned by <strong>your wallet address</strong> (EOA or Safe)</li>
 </ul>
-<p>You should have received:</p>
-<ul>
-<li>Your **Distributor Contract Address**</li>
-<li>The **network** (Polygon mainnet)</li>
-<li>A link to the **claim page**</li>
-<li>Confirmation that tokens are available (or will be shortly)</li>
-</ul>
+<p>You should have received:<br />
+- Your <strong>Distributor Contract Address</strong><br />
+- The <strong>network</strong> (Polygon mainnet)<br />
+- A link to the <strong>claim page</strong><br />
+- Confirmation that tokens are available (or will be shortly)</p>
 <p>If you do not have these, stop here and contact the Foundation.</p>
-<p>---</p>
-<p>## Your Role as a Sysop</p>
+<hr />
+<h2>Your Role as a Sysop</h2>
 <p>You are responsible for:</p>
 <ul>
-<li>Deciding **how users earn points**</li>
+<li>Deciding <strong>how users earn points</strong></li>
 <li>Translating points → token allocations</li>
-<li>Publishing **epochs** (snapshots of who gets what)</li>
+<li>Publishing <strong>epochs</strong> (snapshots of who gets what)</li>
 <li>Hosting or serving epoch artifacts</li>
 <li>Communicating claim info to users</li>
 </ul>
-<p>You are **not** responsible for:</p>
-<ul>
-<li>Minting tokens</li>
-<li>Registry administration</li>
-<li>Other BBS distributors</li>
-<li>Foundation governance</li>
-</ul>
-<p>---</p>
-<p>## Mental Model (Important)</p>
-<p>Think in **epochs**, not balances.</p>
+<p>You are <strong>not</strong> responsible for:<br />
+- Minting tokens<br />
+- Registry administration<br />
+- Other BBS distributors<br />
+- Foundation governance</p>
+<hr />
+<h2>Mental Model (Important)</h2>
+<p>Think in <strong>epochs</strong>, not balances.</p>
 <ul>
 <li>Each epoch is a snapshot in time</li>
-<li>Each user can claim **once per epoch**</li>
-<li>Amounts are **entitlements**, not deltas</li>
-<li>Unclaimed tokens do *not* roll over automatically</li>
+<li>Each user can claim <strong>once per epoch</strong></li>
+<li>Amounts are <strong>entitlements</strong>, not deltas</li>
+<li>Unclaimed tokens do <em>not</em> roll over automatically</li>
 </ul>
-<p>If a user earns tokens in Epoch 5 and doesn’t claim:</p>
-<ul>
-<li>Those tokens remain claimable for Epoch 5</li>
-<li>They must also claim Epoch 6 separately</li>
-</ul>
-<p>---</p>
-<p>## Preparing an Epoch (The Core Task)</p>
+<p>If a user earns tokens in Epoch 5 and doesn’t claim:<br />
+- Those tokens remain claimable for Epoch 5<br />
+- They must also claim Epoch 6 separately</p>
+<hr />
+<h2>Preparing an Epoch (The Core Task)</h2>
 <p>At distribution time, you generate a simple JSON file:</p>
-<p>```json</p>
-<p>[</p>
-<p>{</p>
-<pre><code>
-    "address": "0xUserWalletAddress",
-    "amount": "50000000000000000000"
+<pre><code class="language-json">[
+  {
+    &quot;address&quot;: &quot;0xUserWalletAddress&quot;,
+    &quot;amount&quot;: &quot;50000000000000000000&quot;
+  }
+]
 </code></pre>
-<p>}</p>
-<p>]</p>
-<p>```</p>
-<p>Important:</p>
-<ul>
-<li>`address` is the **user’s wallet**</li>
-<li>`amount` is in **base units** (18 decimals)</li>
-<li>This file may contain **many users**</li>
-</ul>
-<p>> Yes, amounts look big.</p>
-<p>> `50 tokens = 50 * 10^18 = 50000000000000000000`</p>
-<p>This file represents **exactly** what users may claim for that epoch.</p>
-<p>---</p>
-<p>## Building the Epoch Artifacts</p>
+<p>Important:<br />
+- <code>address</code> is the <strong>user’s wallet</strong><br />
+- <code>amount</code> is in <strong>base units</strong> (18 decimals)<br />
+- This file may contain <strong>many users</strong></p>
+<blockquote>
+<p>Yes, amounts look big.<br />
+<code>50 tokens = 50 * 10^18 = 50000000000000000000</code></p>
+</blockquote>
+<p>This file represents <strong>exactly</strong> what users may claim for that epoch.</p>
+<hr />
+<h2>Building the Epoch Artifacts</h2>
 <p>From the input JSON, you generate:</p>
 <ul>
-<li>`root.json` → Merkle root</li>
-<li>`proofs.json` → proofs per wallet</li>
+<li><code>root.json</code> → Merkle root</li>
+<li><code>proofs.json</code> → proofs per wallet</li>
 <li>(optionally) the original input file</li>
 </ul>
-<p>These artifacts must be **preserved**.</p>
-<p>If they are lost:</p>
-<ul>
-<li>Users cannot claim</li>
-<li>Epoch cannot be reconstructed</li>
-<li>Tokens are effectively frozen</li>
-</ul>
+<p>These artifacts must be <strong>preserved</strong>.</p>
+<p>If they are lost:<br />
+- Users cannot claim<br />
+- Epoch cannot be reconstructed<br />
+- Tokens are effectively frozen</p>
 <p>Treat them like backups.</p>
-<p>---</p>
-<p>## Publishing the Epoch (On-Chain)</p>
+<hr />
+<h2>Publishing the Epoch (On-Chain)</h2>
 <p>Once artifacts are ready:</p>
-<h2>1. Connect your wallet</h2>
-<h2>2. Call `publishEpoch(root, uri)` on your distributor</h2>
-<h2>3. This increments the epoch number permanently</h2>
-<p>Rules:</p>
-<ul>
-<li>Epoch numbers cannot be reused</li>
-<li>Roots cannot be replaced</li>
-<li>Publishing bad data is irreversible</li>
-</ul>
-<p>**Always validate before publishing.**</p>
-<p>---</p>
-<p>## Where to Host Epoch Data</p>
+<ol>
+<li>Connect your wallet</li>
+<li>Call <code>publishEpoch(root, uri)</code> on your distributor</li>
+<li>This increments the epoch number permanently</li>
+</ol>
+<p>Rules:<br />
+- Epoch numbers cannot be reused<br />
+- Roots cannot be replaced<br />
+- Publishing bad data is irreversible</p>
+<p><strong>Always validate before publishing.</strong></p>
+<hr />
+<h2>Where to Host Epoch Data</h2>
 <p>You may host epoch artifacts anywhere:</p>
 <ul>
 <li>Static web hosting</li>
@@ -120,59 +109,51 @@
 <li>Your BBS server</li>
 <li>blockbra.in, futureland.today, etc.</li>
 </ul>
-<p>The blockchain stores only:</p>
-<ul>
-<li>The Merkle root</li>
-<li>A URI pointer</li>
-</ul>
-<p>The blockchain does **not** validate your hosting.</p>
+<p>The blockchain stores only:<br />
+- The Merkle root<br />
+- A URI pointer</p>
+<p>The blockchain does <strong>not</strong> validate your hosting.</p>
 <p>If users cannot fetch proofs, they cannot claim.</p>
-<p>---</p>
-<p>## User Claims (What Users Do)</p>
+<hr />
+<h2>User Claims (What Users Do)</h2>
 <p>Users claim by calling:</p>
-<p>```</p>
-<p>claim(epoch, amount, proof)</p>
-<p>```</p>
-<p>They may do this:</p>
-<ul>
-<li>Via a web page</li>
-<li>Via a relayer (gas sponsored)</li>
-<li>Via a custom BBS tool</li>
-<li>Via scripts</li>
-</ul>
-<p>You do **not** need to process claims manually.</p>
-<p>---</p>
-<p>## Communicating With Users</p>
-<p>We recommend notifying users **after** an epoch is published.</p>
-<p>Your notification should include:</p>
-<ul>
-<li>Epoch number</li>
-<li>Token amount</li>
-<li>Claim URL</li>
-<li>Their wallet address</li>
-<li>Any deadline (if you impose one)</li>
-</ul>
+<pre><code>claim(epoch, amount, proof)
+</code></pre>
+<p>They may do this:<br />
+- Via a web page<br />
+- Via a relayer (gas sponsored)<br />
+- Via a custom BBS tool<br />
+- Via scripts</p>
+<p>You do <strong>not</strong> need to process claims manually.</p>
+<hr />
+<h2>Communicating With Users</h2>
+<p>We recommend notifying users <strong>after</strong> an epoch is published.</p>
+<p>Your notification should include:<br />
+- Epoch number<br />
+- Token amount<br />
+- Claim URL<br />
+- Their wallet address<br />
+- Any deadline (if you impose one)</p>
 <p>Example claim link:</p>
-<p>```</p>
-<p>https://blockbra.in/bbscoin/tx.html</p>
-<p>?chain=137</p>
-<p>&to=0xYourDistributor</p>
-<p>&epoch=5</p>
-<p>&amount=50000000000000000000</p>
-<p>&proof=[...]</p>
-<p>```</p>
-<p>Do **not** email private keys.</p>
-<p>Do **not** guess wallet addresses.</p>
-<p>---</p>
-<p>## Common Footguns (Read This)</p>
-<p>❌ Publishing an epoch with the wrong wallet addresses</p>
-<p>❌ Publishing before funding the distributor</p>
-<p>❌ Losing `proofs.json`</p>
-<p>❌ Mixing human-readable tokens with base units</p>
-<p>❌ Assuming claims “auto-roll over”</p>
-<p>If you are unsure, **do not publish**.</p>
-<p>---</p>
-<p>## Best Practices</p>
+<pre><code>https://blockbra.in/bbscoin/tx.html
+?chain=137
+&amp;to=0xYourDistributor
+&amp;epoch=5
+&amp;amount=50000000000000000000
+&amp;proof=[...]
+</code></pre>
+<p>Do <strong>not</strong> email private keys.<br />
+Do <strong>not</strong> guess wallet addresses.</p>
+<hr />
+<h2>Common Footguns (Read This)</h2>
+<p>❌ Publishing an epoch with the wrong wallet addresses<br />
+❌ Publishing before funding the distributor<br />
+❌ Losing <code>proofs.json</code><br />
+❌ Mixing human-readable tokens with base units<br />
+❌ Assuming claims “auto-roll over”  </p>
+<p>If you are unsure, <strong>do not publish</strong>.</p>
+<hr />
+<h2>Best Practices</h2>
 <ul>
 <li>Dry-run epoch builds before publishing</li>
 <li>Keep artifacts in version control</li>
@@ -180,27 +161,23 @@
 <li>Keep a local archive</li>
 <li>Start small (1–2 users) for first epoch</li>
 </ul>
-<p>---</p>
-<p>## When to Contact the Foundation</p>
-<p>Contact the Foundation if:</p>
-<ul>
-<li>You published a bad epoch</li>
-<li>You need additional funding</li>
-<li>You lost epoch artifacts</li>
-<li>Your sysop key is compromised</li>
-<li>You want to pause or shut down distributions</li>
-</ul>
-<p>---</p>
-<p>## Final Notes</p>
-<p>This system is designed to be:</p>
-<ul>
-<li>Transparent</li>
-<li>Minimal</li>
-<li>Non-custodial</li>
-<li>BBS-friendly</li>
-</ul>
-<p>You are not issuing money.</p>
-<p>You are issuing **participation credits** backed by cryptography.</p>
+<hr />
+<h2>When to Contact the Foundation</h2>
+<p>Contact the Foundation if:<br />
+- You published a bad epoch<br />
+- You need additional funding<br />
+- You lost epoch artifacts<br />
+- Your sysop key is compromised<br />
+- You want to pause or shut down distributions</p>
+<hr />
+<h2>Final Notes</h2>
+<p>This system is designed to be:<br />
+- Transparent<br />
+- Minimal<br />
+- Non-custodial<br />
+- BBS-friendly</p>
+<p>You are not issuing money.<br />
+You are issuing <strong>participation credits</strong> backed by cryptography.</p>
 <p>Welcome to the experiment.</p>
 <p>— BBS Coin Foundation</p>
         <hr>
