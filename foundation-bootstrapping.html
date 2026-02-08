@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBS Coin - Bootstrap Documentation</title>
+    <link rel="stylesheet" href="global.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Foundation Bootstrapping Guide</h1>
+<p>This document describes the <strong>one‑time setup</strong> required to initialize the BBS Coin Foundation on a given chain.</p>
+<h2>1. Create Safe Multisig</h2>
+<ul>
+<li>Choose signer set (e.g. 5 signers)</li>
+<li>Choose threshold (e.g. 3‑of‑5)</li>
+<li>Use https://safe.global</li>
+<li>Hardware wallets strongly recommended</li>
+</ul>
+<h2>2. Deploy Core Contracts</h2>
+<p>Deploy in this order:<br />
+1. <code>DistributorRegistry</code><br />
+2. <code>BbsTreasury</code><br />
+3. <code>BbsToken</code></p>
+<h2>3. Wire Contracts</h2>
+<ul>
+<li>Call <code>DistributorRegistry.setTreasury(treasuryAddress)</code></li>
+<li>Call <code>BbsTreasury.setToken(tokenAddress)</code></li>
+<li>Grant <code>MINTER_ROLE</code> on <code>BbsToken</code> to Treasury</li>
+</ul>
+<h2>4. Verify Contracts</h2>
+<ul>
+<li>Verify all contracts on the block explorer</li>
+<li>Enables readable interaction and transparency</li>
+</ul>
+<h2>5. Operational Readiness</h2>
+<p>At this point the Foundation can:<br />
+- Mint tokens to Treasury<br />
+- Deploy distributors for sysops<br />
+- Fund distributors</p>
+<p>No sysop onboarding should happen before this step.</p>
+        <hr>
+        <p><a href="index.html">← Back to Index</a></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBS Coin - Foundation Administration</title>
+    <link rel="stylesheet" href="global.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Foundation Chain Operations (Multisig / Safe Runbook)</h1>
+<p>This document is <strong>the practical, technical guide</strong> for how the BBS Coin Foundation<br />
+actually operates contracts on-chain.</p>
+<p>No DAO theory, no governance hype — just how adults run smart contracts with a multisig.</p>
+<hr />
+<h2>1. What “the Foundation” is on-chain</h2>
+<p>On-chain, <strong>the Foundation is the Safe</strong>.</p>
+<p>There is no special Foundation contract, role, or magic address.<br />
+Whoever can execute transactions <strong>from the Safe</strong> controls Foundation authority.</p>
+<p>Key implication:<br />
+- If the Safe owns <code>BbsTreasury</code>, then <strong>only Safe-approved transactions</strong> can:<br />
+  - mint tokens<br />
+  - deploy distributors<br />
+  - fund distributors<br />
+  - enable / disable distributors<br />
+  - perform emergency actions</p>
+<p>Everything else is off-chain process and human coordination.</p>
+<hr />
+<h2>2. Mental model: how multisig execution actually works</h2>
+<p>A Safe transaction has four real stages:</p>
+<ol>
+<li><strong>Propose</strong></li>
+<li>One signer creates a transaction</li>
+<li>Defines <code>to</code>, <code>value</code>, and <code>data</code></li>
+<li><strong>Review</strong></li>
+<li>Other signers inspect the transaction details</li>
+<li><strong>Approve</strong></li>
+<li>Signers approve until quorum is met</li>
+<li><strong>Execute</strong></li>
+<li>One signer submits the transaction on-chain</li>
+</ol>
+<p>Important:<br />
+- Creating a transaction ≠ executing it<br />
+- Approving ≠ executing<br />
+- Nothing happens on-chain until execution</p>
+<hr />
+<h2>3. What the Foundation actually does (and does not do)</h2>
+<h3>Foundation DOES</h3>
+<ul>
+<li>Own and operate <code>BbsTreasury</code></li>
+<li>Mint tokens into Treasury</li>
+<li>Deploy distributor contracts</li>
+<li>Fund distributor contracts</li>
+<li>Enable / disable distributors</li>
+<li>Recover funds in emergencies</li>
+</ul>
+<h3>Foundation DOES NOT</h3>
+<ul>
+<li>Publish Merkle epochs</li>
+<li>Generate Merkle trees</li>
+<li>Handle user claims</li>
+<li>Manage BBS integrations</li>
+<li>Decide how sysops calculate rewards</li>
+</ul>
+<p>Those responsibilities belong to sysops and their tooling.</p>
+<hr />
+<h2>4. Transactions vs call data (critical distinction)</h2>
+<p>A <strong>transaction</strong> is:<br />
+- <code>to</code> address<br />
+- <code>value</code> (usually 0)<br />
+- <code>data</code> (ABI-encoded function call)</p>
+<p><strong>Call data</strong> is just the encoded function call.<br />
+Safe executes transactions — not “functions”.</p>
+<p>You must always know:<br />
+- what contract you are calling<br />
+- which function<br />
+- with what parameters<br />
+- what state change that causes</p>
+<hr />
+<h2>5. How the Foundation generates call data</h2>
+<p>There are two supported paths.</p>
+<h3>Option A: Safe UI (simplest)</h3>
+<p>Use Safe’s <strong>Contract Interaction</strong> feature:<br />
+- Paste or select contract ABI<br />
+- Choose function<br />
+- Enter parameters<br />
+- Safe builds the call data</p>
+<p>Pros:<br />
+- No scripting<br />
+- Harder to screw up encoding</p>
+<p>Cons:<br />
+- Manual<br />
+- Slower at scale</p>
+<hr />
+<h3>Option B: Generate call data with scripts (recommended long-term)</h3>
+<p>Use <code>ethers</code> to generate call data locally, then paste into Safe.</p>
+<p>Example pattern:</p>
+<pre><code class="language-ts">import { ethers } from &quot;ethers&quot;;
+
+const abi = [
+  &quot;function fundDistributor(address distributor, uint256 amount)&quot;
+];
+
+const iface = new ethers.Interface(abi);
+const data = iface.encodeFunctionData(
+  &quot;fundDistributor&quot;,
+  [&quot;0xDistributor&quot;, 500n * 10n**18n]
+);
+
+console.log(data);
+</code></pre>
+<p>Safe inputs:<br />
+- to: <code>BbsTreasury</code> address<br />
+- value: <code>0</code><br />
+- data: output from script</p>
+<p>Pros:<br />
+- Auditable<br />
+- Repeatable<br />
+- Commit scripts to Git</p>
+<hr />
+<h2>6. Concrete Foundation operations (tied to your contracts)</h2>
+<p>Below are <strong>real actions</strong> the Foundation will take, mapped directly to Solidity.</p>
+<hr />
+<h3>6.1 Set token on Treasury (one-time)</h3>
+<p>Contract:<br />
+- <code>BbsTreasury</code></p>
+<p>Function:</p>
+<pre><code class="language-solidity">function setToken(address token_)
+</code></pre>
+<p>When:<br />
+- After deploying <code>BbsToken</code></p>
+<p>Safe transaction:<br />
+- to: <code>BbsTreasury</code><br />
+- value: <code>0</code><br />
+- data: <code>setToken(tokenAddress)</code></p>
+<p>Failure conditions:<br />
+- Reverts if already set</p>
+<hr />
+<h3>6.2 Grant MINTER_ROLE to Treasury (one-time)</h3>
+<p>Contract:<br />
+- <code>BbsToken</code></p>
+<p>Functions:</p>
+<pre><code class="language-solidity">function MINTER_ROLE() external view returns (bytes32)
+function grantRole(bytes32 role, address account)
+</code></pre>
+<p>When:<br />
+- After Treasury deployment<br />
+- Before minting</p>
+<p>Effect:<br />
+- Allows Treasury to mint tokens</p>
+<hr />
+<h3>6.3 Mint tokens to Treasury</h3>
+<p>Contract:<br />
+- <code>BbsTreasury</code></p>
+<p>Function:</p>
+<pre><code class="language-solidity">function mintToTreasury(uint256 amount)
+</code></pre>
+<p>When:<br />
+- Treasury needs supply to fund distributors</p>
+<p>Important:<br />
+- <code>amount</code> is in base units (18 decimals)</p>
+<hr />
+<h3>6.4 Deploy a distributor (sysop onboarding)</h3>
+<p>Contract:<br />
+- <code>BbsTreasury</code></p>
+<p>Function:</p>
+<pre><code class="language-solidity">function deployDistributor(
+  address sysopOwner,
+  string bbsId,
+  string metadataURI
+)
+</code></pre>
+<p>What this does:<br />
+- Deploys <code>BbsMerkleDistributor</code><br />
+- Registers it in <code>DistributorRegistry</code><br />
+- Enables it for funding</p>
+<p>Output:<br />
+- Distributor address emitted in <code>DistributorDeployed</code> event</p>
+<hr />
+<h3>6.5 Fund a distributor</h3>
+<p>Contract:<br />
+- <code>BbsTreasury</code></p>
+<p>Function:</p>
+<pre><code class="language-solidity">function fundDistributor(address distributor, uint256 amount)
+</code></pre>
+<p>Checks:<br />
+- Distributor must be enabled<br />
+- Treasury must have sufficient balance</p>
+<hr />
+<h3>6.6 Disable or re-enable a distributor</h3>
+<p>Contract:<br />
+- <code>BbsTreasury</code></p>
+<p>Function:</p>
+<pre><code class="language-solidity">function setDistributorEnabled(address distributor, bool enabled)
+</code></pre>
+<p>Use cases:<br />
+- Sysop key compromised<br />
+- Abuse<br />
+- Temporary suspension</p>
+<hr />
+<h3>6.7 Emergency recovery (optional)</h3>
+<p>Contract:<br />
+- <code>BbsTreasury</code> → <code>BbsMerkleDistributor</code></p>
+<p>Function chain:</p>
+<pre><code class="language-solidity">BbsTreasury.revokeFromDistributor(...)
+→ BbsMerkleDistributor.revokeToTreasury(...)
+</code></pre>
+<p>Purpose:<br />
+- Pull unclaimed tokens back to Treasury</p>
+<hr />
+<h2>7. Safe execution checklist (do this every time)</h2>
+<p>Before approving a Safe transaction:</p>
+<ul>
+<li>[ ] Correct chain (Polygon vs testnet)</li>
+<li>[ ] <code>to</code> address matches canonical contract</li>
+<li>[ ] <code>value == 0</code></li>
+<li>[ ] Function name and params correct</li>
+<li>[ ] Amounts use base units (18 decimals)</li>
+<li>[ ] Action matches Foundation intent</li>
+<li>[ ] Sysop address verified (for deploys)</li>
+</ul>
+<p>If any box is unchecked, do not approve.</p>
+<hr />
+<h2>8. Separation of responsibilities (burn this in)</h2>
+<ul>
+<li><strong>Foundation</strong></li>
+<li>Controls supply</li>
+<li>Controls distributors</li>
+<li>Provides funding</li>
+<li><strong>Sysop</strong></li>
+<li>Publishes epochs</li>
+<li>Generates Merkle trees</li>
+<li>Operates BBS integration</li>
+<li><strong>User</strong></li>
+<li>Claims tokens</li>
+<li>Owns wallet</li>
+</ul>
+<p>If these blur, bugs and blame follow.</p>
+<hr />
+<h2>9. Operational record keeping (not optional)</h2>
+<p>Maintain a simple log per chain:<br />
+- Date<br />
+- Safe tx ID<br />
+- On-chain tx hash<br />
+- Operation type<br />
+- Parameters<br />
+- Link to explorer<br />
+- Notes</p>
+<p>This matters more than clever tooling.</p>
+<hr />
+<h2>10. Final principle</h2>
+<p>The Safe is not a convenience.<br />
+It is the <em>constitution</em> of the Foundation.</p>
+<p>If it’s not executed by the Safe,<br />
+it didn’t happen.</p>
+        <hr>
+        <p><a href="index.html">← Back to Index</a></p>
+    </div>
+</body>
+</html>

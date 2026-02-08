@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBS Coin - Foundation Info</title>
+    <link rel="stylesheet" href="global.css">
+</head>
+<body>
+    <div class="container">
+        <p>Foundation Guide (BBS-Coin)</p>
+<p>This document describes the minimal responsibilities of the BBS-Coin Foundation. It intentionally focuses on onboarding sysops and funding distributors, which are the only required operational tasks today.</p>
+<p>Governance, DAO mechanics, and long-term policy are intentionally left lightweight and evolutionary.</p>
+<p>⸻</p>
+<ol>
+<li>Role of the Foundation</li>
+</ol>
+<p>The Foundation exists to:<br />
+    •   Maintain neutral custody of mint authority<br />
+    •   Prevent any single BBS from controlling supply<br />
+    •   Onboard new BBSes fairly<br />
+    •   Fund distributors transparently</p>
+<p>The Foundation does not:<br />
+    •   Run a BBS<br />
+    •   Allocate rewards to users<br />
+    •   Decide how sysops award points</p>
+<p>⸻</p>
+<ol>
+<li>Ownership &amp; Control Model</li>
+</ol>
+<p>Safe Ownership (Recommended)</p>
+<p>The Foundation controls:<br />
+    •   BbsTreasury<br />
+    •   DistributorRegistry</p>
+<p>via a Gnosis Safe on Polygon.</p>
+<p>Current state:<br />
+    •   Single signer (bootstrap phase)<br />
+    •   Designed to expand to multi-signer</p>
+<p>This is not centralization by design, but a temporary operational reality.</p>
+<p>⸻</p>
+<ol>
+<li>Onboarding a New Sysop (Priority #1)</li>
+</ol>
+<p>Inputs from Sysop<br />
+    •   Sysop owner wallet (EOA or Safe)<br />
+    •   BBS identifier (domain or name)<br />
+    •   Optional metadata URL</p>
+<p>Actions Taken by Foundation<br />
+    1.  Deploy distributor</p>
+<p>BbsTreasury.deployDistributor(sysopOwner, bbsId, metadataURI)</p>
+<pre><code>2.  Register distributor
+</code></pre>
+<p>DistributorRegistry.register(...)</p>
+<pre><code>3.  Enable distributor
+</code></pre>
+<p>BbsTreasury.setDistributorEnabled(distributor, true)</p>
+<p>The sysop now controls epoch publishing.</p>
+<p>⸻</p>
+<ol>
+<li>Funding Distributors (Priority #2)</li>
+</ol>
+<p>Minting</p>
+<p>Tokens are minted only to the Treasury:</p>
+<p>BbsTreasury.mintToTreasury(amount)</p>
+<p>Funding a Distributor</p>
+<p>BbsTreasury.fundDistributor(distributor, amount)</p>
+<p>Properties:<br />
+    •   All funding is explicit and auditable<br />
+    •   Lifetime funding is tracked on-chain<br />
+    •   Distributors cannot mint</p>
+<p>⸻</p>
+<ol>
+<li>Emergency Powers (Rare)</li>
+</ol>
+<p>If a sysop key is compromised or a severe error occurs:</p>
+<p>BbsTreasury.revokeFromDistributor(distributor, amount)</p>
+<p>This should be:<br />
+    •   Rare<br />
+    •   Publicly explained<br />
+    •   Used only to protect users</p>
+<p>⸻</p>
+<ol>
+<li>Current Governance Reality</li>
+</ol>
+<p>Today:<br />
+    •   Governance is human<br />
+    •   Decisions are social<br />
+    •   Execution is on-chain</p>
+<p>Future options (non-binding):<br />
+    •   Multi-sig expansion<br />
+    •   Advisory councils<br />
+    •   Token-based signaling</p>
+<p>No DAO is required for BBS-Coin to function.</p>
+<p>⸻</p>
+<p>Summary</p>
+<p>The Foundation exists to make BBS-Coin boring, predictable, and fair.</p>
+<p>If sysops can onboard easily and users can trust the system, the Foundation is doing its job.</p>
+        <hr>
+        <p><a href="index.html">← Back to Index</a></p>
+    </div>
+</body>
+</html>

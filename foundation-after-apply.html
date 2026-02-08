@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBS Coin - Approving New BBSes</title>
+    <link rel="stylesheet" href="global.css">
+</head>
+<body>
+    <div class="container">
+        <h1>After a Sysop Applies — Foundation Workflow</h1>
+<p>This document describes what the Foundation does <strong>after</strong> a sysop submits an application.</p>
+<h2>1. Review Application</h2>
+<p>Evaluate:<br />
+- BBS identity and longevity<br />
+- Community relevance<br />
+- Technical readiness<br />
+- Sysop wallet address</p>
+<p>Approval is social, not automatic.</p>
+<h2>2. Deploy Distributor</h2>
+<p>If approved:<br />
+- Treasury deploys <code>BbsMerkleDistributor</code><br />
+- Sysop is set as distributor owner<br />
+- Distributor registered in <code>DistributorRegistry</code></p>
+<p>Relevant function:<br />
+- <code>BbsTreasury.deployDistributor()</code></p>
+<h2>3. Fund Distributor</h2>
+<p>Foundation decides initial allocation.</p>
+<p>Steps:<br />
+- Mint tokens to Treasury if needed (<code>mintToTreasury</code>)<br />
+- Transfer tokens to distributor (<code>fundDistributor</code>)</p>
+<h2>4. Notify Sysop</h2>
+<p>Provide:<br />
+- Distributor contract address<br />
+- Chain information<br />
+- Basic operating expectations</p>
+<h2>5. Ongoing Relationship</h2>
+<p>Foundation may:<br />
+- Top‑up distributor<br />
+- Pause or disable distributor if necessary<br />
+- Rotate sysop keys if compromised (with consent)</p>
+<p>All actions require multisig approval.</p>
+        <hr>
+        <p><a href="index.html">← Back to Index</a></p>
+    </div>
+</body>
+</html>
