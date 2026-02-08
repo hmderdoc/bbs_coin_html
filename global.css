@@ -32,12 +32,17 @@ body {
     padding: 20px;
 }
 
-.cube-image {
+.cube-img {
     max-height: 160px;
 }
 
 .header.pre-container {
     display: flex;
+    align-items: center;
+}
+
+.page-title {
+    font-size: 36 px
 }
 .container {
     max-width: 900px;
