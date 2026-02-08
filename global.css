@@ -32,6 +32,13 @@ body {
     padding: 20px;
 }
 
+.cube-image {
+    max-height: 160px;
+}
+
+.header.pre-container {
+    display: flex;
+}
 .container {
     max-width: 900px;
     margin: 0 auto;
