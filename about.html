@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBS Coin - about</title>
+    <link rel="stylesheet" href="global.css">
+</head>
+<body>
+    <div class="container">
+        <h3>BBS-Coin</h3>
+<h2>1. Overview</h2>
+<h3>What is BBS-Coin?</h3>
+<p>BBS-Coin is an ERC-20 token system designed to incentivize participation in Bulletin Board Systems (BBSes). It is explicitly not marketed as a financial instrument or investment. Tokens represent points, reputation, participation, or governance weight depending on how a community chooses to use them.</p>
+<p>Key properties:</p>
+<ul>
+<li>ERC-20 compliant token (OpenZeppelin-based)</li>
+<li>Minting controlled by a Treasury contract</li>
+<li>Treasury is intended to be owned by a Safe (multisig)</li>
+<li>Multiple independent BBSes supported via per-BBS distributor contracts</li>
+<li>No single BBS controls the supply</li>
+</ul>
+<h3>ELI5</h3>
+<p>Think of BBS-Coin like arcade tickets:</p>
+<ul>
+<li>You earn tickets for doing stuff on a BBS</li>
+<li>Tickets can later be redeemed for prizes, votes, or bragging rights</li>
+<li>A neutral foundation prints the tickets</li>
+<li>Each arcade (BBS) hands them out independently</li>
+</ul>
+<h3>Architecture</h3>
+<p>BbsToken (ERC-20)</p>
+<pre><code>
+     ↑ mint (mintToTreasury)
+</code></pre>
+<p>BbsTreasury (Safe-owned)</p>
+<pre><code>
+     ↓ fund (fundDistributor)
+</code></pre>
+<p>BbsMerkleDistributor (per BBS)</p>
+<pre><code>
+     ↓ claim (claim / claimFor)
+</code></pre>
+<h3>Users</h3>
+<h3>Core Contracts</h3>
+<p>Contract	Purpose</p>
+<p>BbsToken	ERC-20 token</p>
+<p>BbsTreasury	Minting + distributor funding</p>
+<p>DistributorRegistry	Discovery + metadata</p>
+<h3>BbsMerkleDistributor	Per-BBS reward distribution</h3>
+<p>⸻</p>
+<h2>2. Sysop Guide (How to Integrate a BBS)</h2>
+<h3>What a Sysop Controls</h3>
+<p>A sysop:</p>
+<ul>
+<li>Owns a single BbsMerkleDistributor</li>
+<li>Decides how users earn points (posts, games, logins, etc.)</li>
+<li>Tracks those points off-chain</li>
+<li>Periodically converts points into Merkle epochs</li>
+</ul>
+<p>A sysop does not:</p>
+<ul>
+<li>Mint tokens</li>
+<li>Control total supply</li>
+<li>Modify other BBSes</li>
+</ul>
+<p>Distributor Lifecycle (with code references)</p>
+<pre><code>
+    1.    Distributor is deployed by the Foundation
+</code></pre>
+<p>→ BbsTreasury.deployDistributor(sysopOwner, bbsId, metadataURI)</p>
+<pre><code>
+    2.    Distributor is registered for discovery
+</code></pre>
+<p>→ DistributorRegistry.register(...) (called internally by Treasury)</p>
+<pre><code>
+    3.    Distributor is funded with tokens
+</code></pre>
+<p>→ BbsTreasury.fundDistributor(distributor, amount)</p>
+<pre><code>
+    4.    Sysop publishes an epoch
+</code></pre>
+<p>→ BbsMerkleDistributor.publishEpoch(bytes32 root, string uri)</p>
+<pre><code>
+    5.    Users claim tokens
+</code></pre>
+<p>→ BbsMerkleDistributor.claim(epoch, amount, proof)</p>
+<p>→ or gas-sponsored: claimFor(account, epoch, amount, proof)</p>
+<p>Epoch Model</p>
+<ul>
+<li>Epochs are sequential: 0, 1, 2, ...</li>
+<li>Each epoch is independent</li>
+<li>One claim per user per epoch</li>
+<li>Enforced on-chain via _claimed[epoch][account]</li>
+</ul>
+<h3>Merkle Leaf Definition (authoritative)</h3>
+<p>keccak256(abi.encodePacked(account, amount))</p>
+<p>Ethers v6 equivalent:</p>
+<p>keccak256(solidityPacked(["address","uint256"],[account, amountWei]))</p>
+<h3>Required Epoch Artifacts (must be preserved)</h3>
+<p>For each epoch, sysop tooling must persist:</p>
+<ul>
+<li>epoch.json – input snapshot (addresses + amounts)</li>
+<li>root.json – Merkle root published on-chain</li>
+<li>proofs.json – per-address { amount, leaf, proof[] }</li>
+</ul>
+<p>If these artifacts are lost, users may be unable to claim even though the root exists on-chain.</p>
+<p>⸻</p>
+<h2>3. Foundation / Treasury Operations</h2>
+<h3>What the Foundation Controls</h3>
+<p>The Foundation (via Safe) is the only authority that:</p>
+<ul>
+<li>Mints new tokens</li>
+</ul>
+<p>→ BbsTreasury.mintToTreasury(amount)</p>
+<ul>
+<li>Funds distributors</li>
+</ul>
+<p>→ BbsTreasury.fundDistributor(distributor, amount)</p>
+<ul>
+<li>Registers distributors</li>
+</ul>
+<p>→ DistributorRegistry.register(...)</p>
+<ul>
+<li>Enables / disables distributors</li>
+</ul>
+<p>→ BbsTreasury.setDistributorEnabled(distributor, enabled)</p>
+<ul>
+<li>Recovers funds in emergencies</li>
+</ul>
+<p>→ BbsTreasury.revokeFromDistributor(...)</p>
+<p>Token Setup</p>
+<ul>
+<li>Token is deployed first: BbsToken</li>
+<li>Treasury address is granted MINTER_ROLE</li>
+<li>Token address is set once via:</li>
+</ul>
+<h3>BbsTreasury.setToken(tokenAddress)</h3>
+<h3>Safe Ownership</h3>
+<p>Recommended:</p>
+<ul>
+<li>Polygon Safe</li>
+<li>2-of-3 or 3-of-5 signers</li>
+<li>Safe is owner of:</li>
+<li>BbsTreasury</li>
+<li>DistributorRegistry</li>
+</ul>
+<p>⸻</p>
+<h2>4. Long-Term Vision</h2>
+<p>Design Principles</p>
+<ul>
+<li>Minimal trust</li>
+<li>Clear separation of concerns</li>
+<li>No forced token value</li>
+<li>No DAO theater</li>
+</ul>
+<p>Possible Future Extensions</p>
+<ul>
+<li>claimMany() helper for UX</li>
+<li>Voting / governance using token balances</li>
+<li>Cross-BBS events</li>
+<li>Additional distributor tooling</li>
+</ul>
+<h3>Guiding Rule</h3>
+<p>BBS-Coin exists to make BBSes more fun — not to turn them into casinos.</p>
+<p>⸻</p>
+<p>Further Reading</p>
+<ul>
+<li>docs/sysop.md – detailed BBS integration & tooling</li>
+<li>docs/foundation.md – Safe operations & governance</li>
+</ul>
+        <hr>
+        <p><a href="index.html">← Back to Index</a></p>
+    </div>
+</body>
+</html>

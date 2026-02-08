@@ -1,0 +1,172 @@
+/* BBS Coin Global Stylesheet - Based on merkle.html */
+
+:root {
+    --bg: #0c0c0c;
+    --card: #111318;
+    --border: #0cc;
+    --border-dim: #066;
+    --cyan: #0ff;
+    --cyan-dim: #099;
+    --gold: #ffd700;
+    --green: #0f0;
+    --green-dim: #090;
+    --red: #f44;
+    --red-dim: #a22;
+    --white: #eee;
+    --gray: #888;
+    --text: #ccc;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 20px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+h1 {
+    color: var(--gold);
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+}
+
+h2 {
+    color: var(--cyan);
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-dim);
+}
+
+h3 {
+    color: var(--cyan-dim);
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+h4 {
+    color: var(--white);
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
+p {
+    margin-bottom: 12px;
+}
+
+ul, ol {
+    margin-left: 24px;
+    margin-bottom: 12px;
+}
+
+li {
+    margin-bottom: 6px;
+}
+
+a {
+    color: var(--cyan);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--cyan-dim);
+    text-decoration: underline;
+}
+
+code {
+    background: #0a0a0a;
+    border: 1px solid var(--border-dim);
+    color: var(--green);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 2px 6px;
+}
+
+pre {
+    background: #0a0a0a;
+    border: 1px solid var(--border-dim);
+    color: var(--white);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 12px;
+    margin: 12px 0;
+    overflow-x: auto;
+}
+
+pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin: 16px 0;
+}
+
+th {
+    color: var(--gold);
+    text-align: left;
+    padding: 8px;
+    border-bottom: 1px solid var(--border-dim);
+    font-weight: normal;
+    letter-spacing: 0.5px;
+    background: var(--card);
+}
+
+td {
+    padding: 8px;
+    border-bottom: 1px solid #1a1a1a;
+    color: var(--text);
+}
+
+tr:hover {
+    background: rgba(0, 204, 204, 0.03);
+}
+
+blockquote {
+    border-left: 3px solid var(--cyan);
+    padding-left: 12px;
+    margin: 12px 0;
+    color: var(--gray);
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--border-dim);
+    margin: 24px 0;
+}
+
+strong, b {
+    color: var(--white);
+    font-weight: bold;
+}
+
+em, i {
+    color: var(--cyan-dim);
+    font-style: italic;
+}

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBS Coin - sysop</title>
+    <link rel="stylesheet" href="global.css">
+</head>
+<body>
+    <div class="container">
+        <p># Sysop Guide (BBS-Coin)</p>
+<p>This document explains **how a BBS sysop joins BBS-Coin, prepares reward data,</p>
+<p>and publishes epochs**.</p>
+<p>It is intentionally practical and minimal.</p>
+<p>If you run a BBS and want to distribute BBS-Coin to your users, this is the only</p>
+<p>document you need.</p>
+<p>---</p>
+<p>## 0. Mental Model (Read This First)</p>
+<ul>
+<li>You **do not mint tokens**</li>
+<li>You **do not control supply**</li>
+<li>You are given a **Distributor contract** that already holds tokens</li>
+<li>Your responsibility is limited to:</li>
+</ul>
+<h2>1. Deciding who earns tokens</h2>
+<h2>2. Publishing that decision as an immutable snapshot (epoch)</h2>
+<h2>3. Letting users claim</h2>
+<p>Everything else is off-chain bookkeeping.</p>
+<p>---</p>
+<p>## 1. Signup & Onboarding (Sysop ↔ Foundation)</p>
+<p>### What the Sysop Provides</p>
+<ul>
+<li>Sysop wallet address (EOA or Safe)</li>
+<li>BBS identifier (e.g. `futureland.today`)</li>
+<li>Optional metadata URL</li>
+</ul>
+<p>### What the Foundation Does</p>
+<h2>1. Deploys your distributor</h2>
+<p>`BbsTreasury.deployDistributor(sysopOwner, bbsId, metadataURI)`</p>
+<h2>2. Registers it</h2>
+<p>`DistributorRegistry.register(...)`</p>
+<h2>3. Funds it</h2>
+<p>`BbsTreasury.fundDistributor(distributor, amount)`</p>
+<p>You receive a distributor address that is ready to use once funded.</p>
+<p>---</p>
+<p>## 2. Preparing Reward Data</p>
+<p>At distribution time, produce:</p>
+<p>```json</p>
+<p>[</p>
+<p>{ "address": "0xUser1", "amount": "50000000000000000000" }</p>
+<p>]</p>
+<p>```</p>
+<p>Rules:</p>
+<ul>
+<li>`amount` is base units (wei) BBS Token uses 18 decimals, so:</li>
+</ul>
+<p>50 tokens = 50 × 10¹⁸ = 50000000000000000000</p>
+<ul>
+<li>One entry per address per epoch</li>
+<li>Amount is the total entitlement for that epoch</li>
+</ul>
+<p>---</p>
+<p>## 3. Leaf Hash (Authoritative)</p>
+<p>Solidity:</p>
+<p>```solidity</p>
+<p>keccak256(abi.encodePacked(account, amount))</p>
+<p>```</p>
+<p>Ethers v6:</p>
+<p>```ts</p>
+<p>ethers.keccak256(</p>
+<p>ethers.solidityPacked(["address","uint256"], [account, amount])</p>
+<p>)</p>
+<p>```</p>
+<p>Any deviation breaks claims permanently.</p>
+<p>---</p>
+<p>## 4. Required Epoch Artifacts</p>
+<p>You **must** persist:</p>
+<ul>
+<li>`epoch.json`</li>
+<li>`root.json`</li>
+<li>`proofs.json`</li>
+</ul>
+<p>Loss of these may prevent claims.</p>
+<p>---</p>
+<p>## 5. Publishing the Epoch</p>
+<p>```solidity</p>
+<p>publishEpoch(root, uri)</p>
+<p>```</p>
+<p>Epochs are:</p>
+<ul>
+<li>Sequential</li>
+<li>Immutable</li>
+<li>Permanent</li>
+</ul>
+<p>---</p>
+<p>## 6. Claims</p>
+<p>Users claim per epoch:</p>
+<p>```solidity</p>
+<p>claim(epoch, amount, proof)</p>
+<p>```</p>
+<p>Unclaimed epochs do not expire.</p>
+<p>---</p>
+<p>## 7. Common Mistakes</p>
+<ul>
+<li>Wrong leaf hash</li>
+<li>Publishing without saving artifacts</li>
+<li>Assuming epochs can be corrected</li>
+</ul>
+<p>---</p>
+<p>## Summary</p>
+<p>Publish only what you are willing to make permanent.</p>
+        <hr>
+        <p><a href="index.html">← Back to Index</a></p>
+    </div>
+</body>
+</html>
