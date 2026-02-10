@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BBS Coin - Claim</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #0c0c0c;
+      --card: #111318;
+      --border: #0cc;
+      --border-dim: #066;
+      --cyan: #0ff;
+      --cyan-dim: #099;
+      --gold: #ffd700;
+      --green: #0f0;
+      --green-dim: #090;
+      --red: #f44;
+      --white: #eee;
+      --gray: #888;
+      --text: #ccc;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      text-align: center;
+      padding: 24px 0;
+      border: 1px solid var(--border);
+      background: var(--card);
+      margin-bottom: 2px;
+    }
+    header h1 {
+      color: var(--gold);
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    header .subtitle {
+      color: var(--cyan-dim);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    section {
+      border: 1px solid var(--border-dim);
+      background: var(--card);
+      padding: 20px;
+      margin-bottom: 2px;
+    }
+    section h2 {
+      color: var(--cyan);
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-dim);
+    }
+    label {
+      color: var(--gray);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    input[type="text"], input[type="number"], textarea {
+      background: #0a0a0a;
+      border: 1px solid var(--border-dim);
+      color: var(--white);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 8px 10px;
+      width: 100%;
+      outline: none;
+    }
+    input:focus, textarea:focus { border-color: var(--cyan); }
+    textarea { min-height: 120px; resize: vertical; }
+    .row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 12px; flex-wrap: wrap; }
+    .row .field { flex: 1; }
+    .row .field-sm { flex: 0 0 160px; }
+
+    button {
+      background: transparent;
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 8px 20px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: all 0.15s;
+    }
+    button:hover:not(:disabled) { background: var(--cyan); color: var(--bg); }
+    button:disabled { border-color: var(--border-dim); color: var(--gray); cursor: not-allowed; }
+    button.primary { border-color: var(--gold); color: var(--gold); }
+    button.primary:hover:not(:disabled) { background: var(--gold); color: var(--bg); }
+    button.danger { border-color: var(--red); color: var(--red); }
+    button.danger:hover:not(:disabled) { background: var(--red); color: var(--bg); }
+
+    .btn-row { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+
+    .status-line { font-size: 12px; margin: 4px 0; }
+    .status-line .label { color: var(--gray); display: inline; }
+    .status-line .value { color: var(--white); }
+
+    .ok { color: var(--green); }
+    .warn { color: var(--gold); }
+    .err { color: var(--red); }
+    .dim { color: var(--gray); }
+    .mono { font-family: inherit; word-break: break-all; }
+
+    .msg-box {
+      padding: 10px 14px;
+      margin: 10px 0;
+      font-size: 12px;
+      border-left: 3px solid;
+    }
+    .msg-box.error { border-color: var(--red); background: rgba(255,68,68,0.08); color: var(--red); }
+    .msg-box.success { border-color: var(--green); background: rgba(0,255,0,0.06); color: var(--green); }
+    .msg-box.info { border-color: var(--cyan); background: rgba(0,204,204,0.06); color: var(--cyan-dim); }
+    .msg-box.warning { border-color: var(--gold); background: rgba(255,215,0,0.06); color: var(--gold); }
+
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--border-dim);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 6px 10px;
+      align-items: start;
+      margin-top: 8px;
+    }
+    .k { color: var(--gray); font-size: 12px; padding-top: 6px; }
+    .v {
+      background: #0a0a0a;
+      border: 1px solid var(--border-dim);
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--white);
+      word-break: break-all;
+    }
+    .tx-link { color: var(--cyan); text-decoration: none; }
+    .tx-link:hover { text-decoration: underline; }
+
+    footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 11px;
+      color: var(--gray);
+      border: 1px solid var(--border-dim);
+      background: var(--card);
+    }
+    footer a { color: var(--cyan-dim); text-decoration: none; }
+    footer a:hover { color: var(--cyan); }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <header>
+    <h1>BBS COIN CLAIM</h1>
+    <div class="subtitle">Claim your epoch allocation from URL parameters</div>
+  </header>
+
+  <!-- ============================================================ -->
+  <!-- WALLET -->
+  <!-- ============================================================ -->
+  <section>
+    <h2>WALLET</h2>
+    <div class="btn-row">
+      <button id="btnConnect" onclick="connectWallet()">Connect MetaMask</button>
+    </div>
+    <div id="walletStatus"></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- CLAIM PARAMS -->
+  <!-- ============================================================ -->
+  <section>
+    <h2>CLAIM PARAMETERS</h2>
+
+    <div class="row">
+      <div class="field">
+        <label>Distributor (to)</label>
+        <input type="text" id="toAddr" placeholder="0xDistributor..." />
+      </div>
+      <div class="field-sm">
+        <label>chainId</label>
+        <input type="number" id="chainId" placeholder="137" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field-sm">
+        <label>Epoch</label>
+        <input type="number" id="epoch" placeholder="0" />
+      </div>
+      <div class="field">
+        <label>Amount (base units / wei)</label>
+        <input type="text" id="amount" placeholder="1000000000000000000" />
+      </div>
+    </div>
+
+    <label>Proof (JSON array of bytes32)</label>
+    <textarea id="proof" placeholder='["0x...","0x..."]'></textarea>
+
+    <div class="btn-row">
+      <button id="btnFill" onclick="fillFromUrl()">Fill from URL</button>
+      <button id="btnPreflight" onclick="preflight()" disabled>Preflight</button>
+      <button id="btnClaim" class="primary" onclick="claim()" disabled>Claim</button>
+    </div>
+
+    <div id="paramStatus"></div>
+
+    <div class="msg-box info">
+      If the proof is too long for the URL, use <span class="mono">proof_b64</span> =
+      base64url(JSON array). This page accepts both.
+    </div>
+
+    <div class="kv">
+      <div class="k">URL mode</div><div class="v" id="pMode">(not loaded)</div>
+      <div class="k">to</div><div class="v" id="pTo">(none)</div>
+      <div class="k">chain</div><div class="v" id="pChain">(none)</div>
+      <div class="k">epoch</div><div class="v" id="pEpoch">(none)</div>
+      <div class="k">amount</div><div class="v" id="pAmount">(none)</div>
+      <div class="k">proof</div><div class="v" id="pProof">(none)</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- LOGS -->
+  <!-- ============================================================ -->
+  <section>
+    <h2>STATUS / LOGS</h2>
+    <div id="logs" class="v" style="min-height: 120px; white-space: pre-wrap;"></div>
+    <div class="btn-row">
+      <button onclick="copyLogs()">Copy logs</button>
+      <button onclick="clearLogs()">Clear logs</button>
+    </div>
+  </section>
+
+  <footer>
+    BBS Coin — Claim page. Tokens carry no implied value.
+    &bull; <a href="https://polygonscan.com" target="_blank">PolygonScan</a>
+  </footer>
+
+</div>
+
+<script>
+/* ============================================================
+   Minimal ABI (claim) + optional preflight reads
+   ============================================================ */
+const ABI_CLAIM = [
+  "function claim(uint256 epoch, uint256 amount, bytes32[] proof)"
+];
+
+const ABI_PREFLIGHT = [
+  "function paused() view returns (bool)",
+  "function currentEpoch() view returns (uint256)",
+  "function epochRoot(uint256 epoch) view returns (bytes32)",
+  "function isClaimed(uint256 epoch, address account) view returns (bool)"
+];
+
+const POLYGON_CHAIN_ID = 137;
+
+let state = {
+  provider: null,
+  signer: null,
+  connectedAddress: null,
+  connectedChainId: null
+};
+
+function log(line) {
+  const el = document.getElementById("logs");
+  const t = new Date().toISOString();
+  el.textContent += `[${t}] ${line}\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function statusLine(label, value, cls) {
+  return '<div class="status-line">' +
+    '<span class="label">' + escHtml(label) + ': </span>' +
+    '<span class="value ' + (cls || "") + '">' + escHtml(value) + '</span>' +
+    '</div>';
+}
+
+function parseUintStrict(s) {
+  const v = String(s || "").trim();
+  if (!/^\d+$/.test(v)) return null;
+  try { return BigInt(v); } catch { return null; }
+}
+
+function parseProof(text) {
+  const s = String(text || "").trim();
+  if (!s) return null;
+  try {
+    const arr = JSON.parse(s);
+    if (!Array.isArray(arr)) return null;
+    for (const x of arr) {
+      if (typeof x !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(x)) return null;
+    }
+    return arr;
+  } catch {
+    return null;
+  }
+}
+
+function getQuery() {
+  const q = new URLSearchParams(window.location.search);
+  const chain = q.get("chain") || q.get("chainId") || "";
+  const to = q.get("to") || q.get("distributor") || "";
+  const epoch = q.get("epoch") || "";
+  const amount = q.get("amount") || "";
+  let proof = q.get("proof") || "";
+
+  const proofB64 = q.get("proof_b64") || "";
+  if (!proof && proofB64) {
+    try {
+      const b64 = proofB64.replace(/-/g, "+").replace(/_/g, "/");
+      const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+      const json = atob(b64 + pad);
+      proof = json;
+    } catch (e) {
+      log("Failed to decode proof_b64: " + (e?.message || e));
+    }
+  }
+
+  const mode = (to && chain && epoch && amount && proof) ? "claim" : "unknown";
+  return { chain, to, epoch, amount, proof, mode };
+}
+
+function renderParsed() {
+  const q = getQuery();
+  document.getElementById("pMode").textContent = q.mode;
+  document.getElementById("pTo").textContent = q.to || "(none)";
+  document.getElementById("pChain").textContent = q.chain || "(none)";
+  document.getElementById("pEpoch").textContent = q.epoch || "(none)";
+  document.getElementById("pAmount").textContent = q.amount || "(none)";
+  document.getElementById("pProof").textContent =
+    q.proof ? (q.proof.length > 240 ? q.proof.slice(0, 240) + "… (" + q.proof.length + " chars)" : q.proof) : "(none)";
+}
+
+function fillFromUrl() {
+  const q = getQuery();
+  if (q.to) document.getElementById("toAddr").value = q.to;
+  if (q.chain) document.getElementById("chainId").value = q.chain;
+  if (q.epoch) document.getElementById("epoch").value = q.epoch;
+  if (q.amount) document.getElementById("amount").value = q.amount;
+  if (q.proof) document.getElementById("proof").value = q.proof;
+  renderParsed();
+  updateButtons();
+  log("Filled from URL params (mode=" + q.mode + ").");
+}
+
+async function connectWallet() {
+  const statusEl = document.getElementById("walletStatus");
+  statusEl.innerHTML = '<div class="msg-box info"><span class="spinner"></span>Connecting wallet...</div>';
+
+  try {
+    if (!window.ethereum) throw new Error("No wallet detected. Install MetaMask.");
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+    const network = await provider.getNetwork();
+
+    state.provider = provider;
+    state.signer = signer;
+    state.connectedAddress = address;
+    state.connectedChainId = Number(network.chainId);
+
+    statusEl.innerHTML =
+      statusLine("Connected", shortAddr(address), "ok") +
+      statusLine("Chain", String(state.connectedChainId), state.connectedChainId === POLYGON_CHAIN_ID ? "ok" : "warn");
+
+    document.getElementById("btnConnect").textContent = "Reconnect";
+    updateButtons();
+
+    window.ethereum.on?.("accountsChanged", () => location.reload());
+    window.ethereum.on?.("chainChanged", () => location.reload());
+
+    log("Connected wallet " + address + " chainId=" + state.connectedChainId);
+
+  } catch (err) {
+    statusEl.innerHTML = '<div class="msg-box error">' + escHtml(err.message) + '</div>';
+  }
+}
+
+async function ensureChain(expectedChainId) {
+  if (!expectedChainId) return;
+
+  const net = await state.provider.getNetwork();
+  const cid = Number(net.chainId);
+  state.connectedChainId = cid;
+
+  if (cid === expectedChainId) return;
+
+  // request MetaMask switch
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: "0x" + expectedChainId.toString(16) }]
+    });
+    log("Requested chain switch to " + expectedChainId + " (MetaMask).");
+  } catch (e) {
+    throw new Error("Wrong network. Expected chainId=" + expectedChainId + ", connected=" + cid + ". (Switch declined/failed)");
+  }
+
+  // best-effort re-check
+  const net2 = await state.provider.getNetwork();
+  const cid2 = Number(net2.chainId);
+  state.connectedChainId = cid2;
+  if (cid2 !== expectedChainId) throw new Error("Wrong network. Expected chainId=" + expectedChainId + ", connected=" + cid2);
+}
+
+function updateButtons() {
+  const to = document.getElementById("toAddr").value.trim();
+  const chainId = Number(document.getElementById("chainId").value || "0") || null;
+  const epoch = parseUintStrict(document.getElementById("epoch").value);
+  const amount = parseUintStrict(document.getElementById("amount").value);
+  const proof = parseProof(document.getElementById("proof").value);
+
+  const ok =
+    state.signer &&
+    ethers.isAddress(to) &&
+    (chainId === null || Number.isInteger(chainId)) &&
+    epoch !== null &&
+    amount !== null &&
+    proof !== null;
+
+  document.getElementById("btnClaim").disabled = !ok;
+  document.getElementById("btnPreflight").disabled = !(state.signer && ethers.isAddress(to));
+}
+
+async function preflight() {
+  const statusEl = document.getElementById("paramStatus");
+  statusEl.innerHTML = '<div class="msg-box info"><span class="spinner"></span>Preflight...</div>';
+
+  try {
+    if (!state.signer) throw new Error("Connect wallet first.");
+
+    const to = document.getElementById("toAddr").value.trim();
+    if (!ethers.isAddress(to)) throw new Error("Bad distributor address.");
+
+    const expectedChain = Number(document.getElementById("chainId").value || "0") || null;
+    await ensureChain(expectedChain);
+
+    const epochVal = parseUintStrict(document.getElementById("epoch").value);
+    if (epochVal === null) throw new Error("Bad epoch.");
+
+    const c = new ethers.Contract(to, ABI_PREFLIGHT, state.provider);
+
+    const parts = [];
+    // best-effort reads (any may fail on ABI mismatch; show what we can)
+    let paused = null, currentEpoch = null, epochRoot = null, isClaimed = null;
+
+    try { paused = await c.paused(); parts.push(statusLine("paused()", String(paused), paused ? "warn" : "ok")); }
+    catch (e) { parts.push(statusLine("paused()", "unavailable", "warn")); }
+
+    try { currentEpoch = await c.currentEpoch(); parts.push(statusLine("currentEpoch()", String(currentEpoch), "ok")); }
+    catch (e) { parts.push(statusLine("currentEpoch()", "unavailable", "warn")); }
+
+    try {
+      epochRoot = await c.epochRoot(epochVal);
+      const isZero = (String(epochRoot).toLowerCase() === "0x" + "0".repeat(64));
+      parts.push(statusLine(`epochRoot(${epochVal})`, String(epochRoot), isZero ? "warn" : "ok"));
+    } catch (e) {
+      parts.push(statusLine(`epochRoot(${epochVal})`, "unavailable", "warn"));
+    }
+
+    try {
+      isClaimed = await c.isClaimed(epochVal, state.connectedAddress);
+      parts.push(statusLine(`isClaimed(${epochVal}, you)`, String(isClaimed), isClaimed ? "err" : "ok"));
+    } catch (e) {
+      parts.push(statusLine(`isClaimed(${epochVal}, you)`, "unavailable", "warn"));
+    }
+
+    if (paused === true) {
+      parts.push('<div class="msg-box warning">Contract is paused. Claims will revert while paused.</div>');
+    }
+    if (epochRoot && (String(epochRoot).toLowerCase() === "0x" + "0".repeat(64))) {
+      parts.push('<div class="msg-box warning">Epoch root is zero. This epoch may not be published.</div>');
+    }
+    if (isClaimed === true) {
+      parts.push('<div class="msg-box error">This wallet is marked ALREADY_CLAIMED for this epoch.</div>');
+    }
+
+    statusEl.innerHTML = parts.join("");
+    log("Preflight done for distributor " + to);
+
+    updateButtons();
+  } catch (err) {
+    statusEl.innerHTML = '<div class="msg-box error">' + escHtml(err.message) + '</div>';
+    log("Preflight error: " + err.message);
+  }
+}
+
+async function claim() {
+  const statusEl = document.getElementById("paramStatus");
+
+  try {
+    if (!state.signer) throw new Error("Connect wallet first.");
+
+    const to = document.getElementById("toAddr").value.trim();
+    const expectedChain = Number(document.getElementById("chainId").value || "0") || null;
+    const epochVal = parseUintStrict(document.getElementById("epoch").value);
+    const amountVal = parseUintStrict(document.getElementById("amount").value);
+    const proofArr = parseProof(document.getElementById("proof").value);
+
+    if (!ethers.isAddress(to)) throw new Error("Bad distributor address.");
+    if (epochVal === null) throw new Error("Bad epoch.");
+    if (amountVal === null) throw new Error("Bad amount (base units).");
+    if (!proofArr) throw new Error("Bad proof JSON.");
+
+    await ensureChain(expectedChain);
+
+    statusEl.innerHTML = '<div class="msg-box info"><span class="spinner"></span>Estimating gas...</div>';
+
+    const write = new ethers.Contract(to, ABI_CLAIM, state.signer);
+
+    // gas estimate first (catches many reverts)
+    const gas = await write.claim.estimateGas(epochVal, amountVal, proofArr);
+    log("estimateGas OK: " + gas.toString());
+
+    const proceed = confirm(
+      "Submit claim?\n\n" +
+      "Distributor: " + to + "\n" +
+      "Epoch: " + epochVal.toString() + "\n" +
+      "Amount (base): " + amountVal.toString() + "\n\n" +
+      "You will pay network gas."
+    );
+    if (!proceed) return;
+
+    statusEl.innerHTML = '<div class="msg-box info"><span class="spinner"></span>Sending claim transaction... confirm in MetaMask.</div>';
+
+    const tx = await write.claim(epochVal, amountVal, proofArr);
+    log("tx sent: " + tx.hash);
+
+    statusEl.innerHTML =
+      '<div class="msg-box info"><span class="spinner"></span>Waiting for confirmation...<br><span class="dim mono">' +
+      escHtml(tx.hash) + '</span></div>';
+
+    const receipt = await tx.wait();
+    log("tx confirmed: " + receipt.transactionHash + " status=" + receipt.status);
+
+    const cid = state.connectedChainId || expectedChain || 0;
+    const explorer = (cid === 137) ? ("https://polygonscan.com/tx/" + tx.hash) : null;
+
+    statusEl.innerHTML =
+      '<div class="msg-box success">✓ Claim confirmed.<br>' +
+      (explorer ? ('<a class="tx-link" target="_blank" href="' + explorer + '">' + escHtml(tx.hash.substring(0, 22)) + '...</a>') : ('<span class="mono">' + escHtml(tx.hash) + '</span>')) +
+      '</div>';
+
+    // refresh preflight to show isClaimed true
+    try { await preflight(); } catch (_) {}
+
+  } catch (err) {
+    const msg = decodeEthersError(err);
+    statusEl.innerHTML = '<div class="msg-box error">' + escHtml(msg) + '</div>';
+    log("Claim error: " + msg);
+  }
+}
+
+function decodeEthersError(e) {
+  if (!e) return "Unknown error";
+  if (typeof e === "string") return e;
+  const parts = [];
+  if (e.shortMessage) parts.push(e.shortMessage);
+  if (e.reason) parts.push("reason=" + e.reason);
+  if (e.code) parts.push("code=" + e.code);
+  const msg = e.message || e?.error?.message || e?.info?.error?.message;
+  if (msg) parts.push(msg);
+  const dataMsg = e?.data?.message || e?.error?.data?.message || e?.info?.error?.data?.message;
+  if (dataMsg) parts.push(dataMsg);
+  return Array.from(new Set(parts)).filter(Boolean).join(" | ") || "Unknown error";
+}
+
+function shortAddr(addr) {
+  if (!addr || addr.length < 12) return addr || "";
+  return addr.substring(0, 6) + "..." + addr.substring(addr.length - 4);
+}
+
+async function copyLogs() {
+  const text = document.getElementById("logs").textContent || "";
+  await navigator.clipboard.writeText(text);
+  log("Copied logs to clipboard.");
+}
+
+function clearLogs() {
+  document.getElementById("logs").textContent = "";
+}
+
+// init
+(function init() {
+  renderParsed();
+  fillFromUrl();
+  log("Ready. Connect MetaMask to claim.");
+})();
+</script>
+
+</body>
+</html>
