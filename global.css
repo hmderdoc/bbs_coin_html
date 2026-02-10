@@ -39,6 +39,7 @@ body {
 .header.pre-container {
     display: flex;
     align-items: center;
+    justify-content: space-between;
 }
 
 .page-title {
