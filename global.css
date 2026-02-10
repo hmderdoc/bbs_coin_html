@@ -35,7 +35,9 @@ body {
 .cube-img {
     max-height: 160px;
 }
-
+.flowchart-1 {
+    max-height:500px;
+}
 .page-title p {
     color: cyan;
 }
