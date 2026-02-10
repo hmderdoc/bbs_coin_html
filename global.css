@@ -36,6 +36,13 @@ body {
     max-height: 160px;
 }
 
+.page-title p {
+    color: cyan;
+}
+
+.page-title h1 {
+    color: lime;
+}
 .header.pre-container {
     display: flex;
     align-items: center;
