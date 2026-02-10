@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBS Coin - about</title>
+    <link rel="stylesheet" href="global.css">
+</head>
+<body>
+    <div class="container">
+      <div class="section">
+        <h1>BBS-Coin Bare bones integration</h1>
+        <h3>Incorporating with the tokens with your BBS requires 3 basic steps:</h3>
+        <ol>
+          <li>
+            You must have completed an application to apply with a valid web3 wallet address and have been issued a distributor contract that contains tokens.
+          </li>
+          <li>
+            You must gather wallet addresses for your users who want to participate, so you know where to send the coins.
+          </li>
+          <li>
+            You must create a payload that can be consumed <a href="merkle.html"> by the Merkle tool</a> which is a JSON array containing walletAddresses and coins to reward.  You need to preserve the .zip files for claim reference and notify users with claim info (the merkle tool can optionally handle this)
+          </li>
+        </ol>
+        <h4>TL;DR You don't technically need to make a single BBS mod to award tokens, you just need to know how to use merkle.html</h4>
+        <p>
+          However, BBS mods are encouraged - for instance it's nice to be able to show the user their real token balance from the blockchain!
+        </p>
+      </div>
+        <div class="section">
+        <h1>BBS-Coin integrations</h1>
+        <h3>There are many ways the bare bones implementation can be augmented for your BBS users.</h3>
+        <ul>
+          <li>
+            When you gather a user's wallet, you could direct them to a website where they sign a message - this prevents typos and also proves true ownership of the wallet.  A "Wallet Link" type program.
+          </li>
+          <li>
+            You can query the blockchain to find out a users token balance across all BBS's.
+          </li>
+          <li>
+            You can create your own BBS tool or door, to replace or take over responsibility merkle.html for tighter integration for publishing epochs automatically and notifying users inside the BBS architecture.
+          </li>      
+        </ul>
+      </div>
+        <div class="section">
+        <h1>Allocating Coins</h1>
+        <h3>Mostly up to sysops</h3>
+        <ul>
+          <li>
+            Ideas such as point tracking systems, easter egg hunts, grand prizes, statistic based, random drawings are ways to determine what users get tokens.
+          </li>
+          <li>
+            Sysops can earn coins on other BBS's and deposit them back into their distributor account... funding does not require minting or treasury in theory, just active participation.
+          </li>
+          <li>
+            You can create your own BBS tool or door, to replace or take over responsibility merkle.html for tighter integration for publishing epochs automatically and notifying users inside the BBS architecture.
+          </li>  
+          <li>
+            Distributors can't allocate more tokens than they have
+          </li>
+          <li>
+            How you allocate points is mostly up to sysops, however if the foundation detects fishy behavior no distributor is entitled to have funds minted on a rolling basis if the allocation system seems not only arbitrary but being used in bad faith.
+          </li>
+          <li>
+            Contract rule: Distributors / Sysops can not award themselves tokens.
+          </li>
+        </ul>
+      </div>
+              <div class="section">
+        <h1>Spending coins</h1>
+        <h3>Thinking about the future</h3>
+        <p>
+          In the future, coins can be used for more than glory, and maybe the blockchain could be used for more than ERC-20 coins.  For instance BBS coins could be used to buy NFTs.  NFTs don't have to be inherently pointless and I'm not referring to those.  There could be NFT's that offer real utility or value in the BBS ecosystem, however this is not the time or place to discuss that.  For the future...
+        </p>
+      </div>
+</div>
+</body>
+</html>
