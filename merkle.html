@@ -354,6 +354,9 @@
 </div>
 
 <script>
+  function getQueryParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
 /* ========================================================================
    ABI
    ======================================================================== */
@@ -408,12 +411,27 @@ let state = {
 /* ========================================================================
    INIT
    ======================================================================== */
-(function init() {
-  const saved = localStorage.getItem("bbscoin_contract");
-  const savedDec = localStorage.getItem("bbscoin_decimals");
-  const savedClaim = localStorage.getItem("bbscoin_claim_base");
+  (function init() {
+    const urlDistributor =
+        getQueryParam("distributor") ||
+        getQueryParam("contract") ||
+        getQueryParam("to");
 
-  document.getElementById("contractAddr").value = saved || DEFAULT_CONTRACT;
+    const saved = localStorage.getItem("bbscoin_contract");
+    const savedDec = localStorage.getItem("bbscoin_decimals");
+    const savedClaim = localStorage.getItem("bbscoin_claim_base");
+
+    const contract =
+        (urlDistributor && ethers.isAddress(urlDistributor))
+            ? urlDistributor
+            : saved || DEFAULT_CONTRACT;
+
+    document.getElementById("contractAddr").value = contract;
+    localStorage.setItem("bbscoin_contract", contract);
+
+    if (savedDec) {
+        document.getElementById("tokenDecimals").value = savedDec;
+    }
   if (savedDec) document.getElementById("tokenDecimals").value = savedDec;
   if (savedClaim) document.getElementById("claimBaseUrl").value = savedClaim;
 
